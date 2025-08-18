@@ -3,18 +3,12 @@ module.exports = {
     es6: true,
     node: true,
   },
-  parserOptions: {
-    "ecmaVersion": 2018,
-  },
   extends: [
     "eslint:recommended",
     "google",
   ],
-  rules: {
-    "no-restricted-globals": ["error", "name", "length"],
-    "prefer-arrow-callback": "error",
-    "quotes": ["error", "double", {"allowTemplateLiterals": true}],
-  },
+  globals: {},
+  ignorePatterns: ["dist/", "node_modules/"],
   overrides: [
     {
       files: ["**/*.spec.*"],
@@ -24,5 +18,13 @@ module.exports = {
       rules: {},
     },
   ],
-  globals: {},
+  parserOptions: {
+    "ecmaVersion": 2018,
+  },
+  rules: {
+    "no-restricted-globals": ["error", "name", "length"],
+    "prefer-arrow-callback": "error",
+    "quotes": ["error", "double", { "allowTemplateLiterals": true }],
+    "object-curly-spacing": ["error", "always"],
+  },
 };

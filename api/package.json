@@ -1,20 +1,21 @@
 {
-  "name": "functions",
-  "description": "Cloud Functions for Firebase",
+  "name": "uveye-bunnies-api",
+  "description": "API for UVEye Bunnies",
   "scripts": {
     "lint": "eslint .",
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",
     "start": "npm run shell",
-    "deploy": "firebase deploy --only functions",
+    "deploy": "firebase deploy",
     "logs": "firebase functions:log"
   },
   "engines": {
     "node": "22"
   },
   "main": "index.js",
+  "type": "module",
   "dependencies": {
-    "firebase-admin": "^12.6.0",
+    "firebase-admin": "^12.7.0",
     "firebase-functions": "^6.0.1"
   },
   "devDependencies": {

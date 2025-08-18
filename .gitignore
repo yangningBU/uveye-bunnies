@@ -71,3 +71,6 @@ node_modules/
 # VIM Temp Files
 *.swp
 *.swo
+
+# Files on Mac
+.DS_Store
