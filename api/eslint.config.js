@@ -1,6 +1,7 @@
 import eslintPluginJs from "@eslint/js";
 import eslintConfigGoogle from "eslint-config-google";
 import babelParser from "@babel/eslint-parser";
+import globals from "globals";
 
 export default [
   {
@@ -9,6 +10,9 @@ export default [
   {
     files: ["**/*.js"],
     languageOptions: {
+      globals: {
+        ...globals.node,
+      },
       parser: babelParser,
       parserOptions: {
         requireConfigFile: false,
