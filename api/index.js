@@ -7,7 +7,7 @@ import serviceAccount from "./credentials.json" with { type: "json" };
 
 setGlobalOptions({
   maxInstances: 10,
-  region: 'me-west1'
+  region: "me-west1",
 });
 
 initializeApp({
@@ -16,4 +16,6 @@ initializeApp({
 
 const db = getFirestore();
 
-export const dashboard = onRequest((req, res) => dashboardFunction(db, req, res));
+export const dashboard = onRequest(
+  (req, res) => dashboardFunction(db, req, res),
+);

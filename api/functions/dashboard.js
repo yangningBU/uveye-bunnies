@@ -1,5 +1,5 @@
 import * as logger from "firebase-functions/logger";
-import { serverTimestamp } from "firebase-admin/firestore";
+import { FieldValue } from "firebase-admin/firestore";
 
 const dashboardFunction = async (db, request, response) => {
   logger.info("Request received", { query: request.query });
@@ -12,7 +12,7 @@ const dashboardFunction = async (db, request, response) => {
       first: "Yonatan",
       last: "Laurence",
       born: 1991,
-      timestamp: serverTimestamp(),
+      timestamp: FieldValue.serverTimestamp(),
     });
 
     // Read documents
