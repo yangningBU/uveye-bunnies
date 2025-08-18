@@ -106,7 +106,7 @@ We're using Firebase's NoSQL datastore to implement Event Sourcing for our appli
 - cached calculations are stored as API response objects
 
 ### Calculating State
-- get lastest snapshot; if none exists use default values
+- get lastest snapshot; if none exists use default values (e.g. 0 for carrots_eaten etc)
 - get all events since last snapshot
 - call map/reduce on events to calculate new aggregates
 - cache aggregates
@@ -116,3 +116,6 @@ We're using Firebase's NoSQL datastore to implement Event Sourcing for our appli
 - after new event number `100` (configurable), generate new snapshot
 
 I originally had new events triggering incremental calculations of state values. This opened up the system to the issue of a race condition where two events being stored at (almost) the same time resulting in inaccurate calculations of the aggregate (they would miss the other event). Re-calculating the aggregate ensures accuracy and comes at the cost of some performance. The number I chose to trigger a new snapshot is a compromise between accuracy and performance; the number is low enough that re-calculation in memory can be done in a reasonable amount of time but high enough that we aren't storing snapshots after every event. The best number for this is predicated on many factors and in a real-life production system would likely have to be configured based on load and related metrics.
+
+### If calculations take too long
+We can move the state calculations to a background process and use incremental math to calculate the "current" state from the last event. This has the drawback of potentially being inaccurate when there's a race condition or multiple writes for the same user. This is probably a fine trade off since the next request, assuming it's after the background job is done, will have the latest value. The user likely won't notice the missing record in the interim.
