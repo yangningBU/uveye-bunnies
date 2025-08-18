@@ -12,7 +12,7 @@ const dashboardFunction = async (db, request, response) => {
       first: "Yonatan",
       last: "Laurence",
       born: 1991,
-      timestamp: serverTimestamp()
+      timestamp: serverTimestamp(),
     });
 
     // Read documents
@@ -32,6 +32,6 @@ const dashboardFunction = async (db, request, response) => {
     logger.error("Error handling request", error);
     response.status(500).send("Internal Server Error");
   }
-}
+};
 
 export default dashboardFunction;

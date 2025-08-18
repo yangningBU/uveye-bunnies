@@ -14,7 +14,7 @@ npm run start
 App runs on port http://localhost:4200.
 
 ### Back-end
-Functions are available at https://us-central1-uveye-bunnies.cloudfunctions.net/<functionName>
+Endpoints are available at https://me-west1-uveye-bunnies.cloudfunctions.net/<functionName> as indicated in `./api/index.js`.
 
 ```
 cd api
