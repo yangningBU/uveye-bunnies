@@ -1,0 +1,37 @@
+import * as logger from "firebase-functions/logger";
+import { serverTimestamp } from "firebase-admin/firestore";
+
+const dashboardFunction = async (db, request, response) => {
+  logger.info("Request received", { query: request.query });
+  logger.info("Method is", request.method);
+
+  try {
+    // Write a document
+    const docRef = db.collection("example").doc("yonatan");
+    await docRef.set({
+      first: "Yonatan",
+      last: "Laurence",
+      born: 1991,
+      timestamp: serverTimestamp()
+    });
+
+    // Read documents
+    const snapshot = await db.collection("example").get();
+    const results = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    logger.info("Firestore results", results);
+
+    response.json({
+      message: "Hello from Firebase!",
+      data: results,
+    });
+  } catch (error) {
+    logger.error("Error handling request", error);
+    response.status(500).send("Internal Server Error");
+  }
+}
+
+export default dashboardFunction;
