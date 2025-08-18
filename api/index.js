@@ -6,27 +6,40 @@ import { getFirestore } from "firebase-admin/firestore";
 import serviceAccount from "./uveye-bunnies-firebase-adminsdk-fbsvc-c93d9cec13.json" with { type: "json" };
 
 setGlobalOptions({ maxInstances: 10 });
-
-export const helloWorld = onRequest((request, response) => {
-  logger.info("Request: ", request);
-  logger.info("Hello logs!", { structuredData: true });
-  response.send("Hello from Firebase!");
-});
-
 initializeApp({
-  credential: cert(serviceAccount)
+  credential: cert(serviceAccount),
 });
 
 const db = getFirestore();
 
-const docRef = db.collection("example").doc("yonatan");
-await docRef.set({
-  first: "Yonatan",
-  last: "Laurence",
-  born: 1991
-});
+// Cloud Function
+export const helloWorld = onRequest(async (request, response) => {
+  logger.info("Request received", { query: request.query });
 
-const snapshot = await db.collection("example").get();
-snapshot.forEach((doc) => {
-  console.log(doc.id, "=>", doc.data());
+  try {
+    // Write a document
+    const docRef = db.collection("example").doc("yonatan");
+    await docRef.set({
+      first: "Yonatan",
+      last: "Laurence",
+      born: 1991,
+    });
+
+    // Read documents
+    const snapshot = await db.collection("example").get();
+    const results = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    logger.info("Firestore results", results);
+
+    response.json({
+      message: "Hello from Firebase!",
+      data: results,
+    });
+  } catch (error) {
+    logger.error("Error handling request", error);
+    response.status(500).send("Internal Server Error");
+  }
 });
