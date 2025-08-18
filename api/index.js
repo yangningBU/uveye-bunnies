@@ -3,7 +3,7 @@ import * as logger from "firebase-functions/logger";
 import { setGlobalOptions } from "firebase-functions/v2";
 import { initializeApp, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
-import serviceAccount from "./uveye-bunnies-firebase-adminsdk-fbsvc-c93d9cec13.json" with { type: "json" };
+import serviceAccount from "./credentials.json" with { type: "json" };
 
 setGlobalOptions({ maxInstances: 10 });
 initializeApp({
