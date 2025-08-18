@@ -1,8 +1,9 @@
+import { getFirestore } from "firebase-admin/firestore";
 import { onRequest } from "firebase-functions/v2/https";
 import { setGlobalOptions } from "firebase-functions/v2";
 import { initializeApp, cert } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
-import dashboardFunction from "./functions/dashboard.js";
+
+import getDashboard from './functions/dashboard.js';
 import serviceAccount from "./credentials.json" with { type: "json" };
 
 setGlobalOptions({
@@ -16,6 +17,5 @@ initializeApp({
 
 const db = getFirestore();
 
-export const dashboard = onRequest(
-  (req, res) => dashboardFunction(db, req, res),
-);
+export const health = onRequest((_req, res) => { res.json({ ok: true }) });
+export const dashboard = onRequest((req, res) => getDashboard(db, req, res));

@@ -3,10 +3,13 @@ import { FieldValue } from "firebase-admin/firestore";
 
 const dashboardFunction = async (db, request, response) => {
   logger.info("Request received", { query: request.query });
-  logger.info("Method is", request.method);
+
+  if (request.method !== "GET") {
+    response.status(404).json({error: 'Route not supported.'})
+    return;
+  }
 
   try {
-    // Write a document
     const docRef = db.collection("example").doc("yonatan");
     await docRef.set({
       first: "Yonatan",
@@ -15,7 +18,6 @@ const dashboardFunction = async (db, request, response) => {
       timestamp: FieldValue.serverTimestamp(),
     });
 
-    // Read documents
     const snapshot = await db.collection("example").get();
     const results = snapshot.docs.map((doc) => ({
       id: doc.id,
