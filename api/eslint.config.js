@@ -34,6 +34,7 @@ export default [
       "prefer-arrow-callback": "error",
       "quotes": ["error", "double", { allowTemplateLiterals: true }],
       "object-curly-spacing": ["error", "always"],
+      "require-jsdoc": 0,
     },
   },
 ];

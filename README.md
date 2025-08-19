@@ -32,7 +32,9 @@ To call functions locally in an interactive console:
 npm run start
 ```
 
-To deploy changes to live environment:
+# Deployment
 ```
+cd api
 npm run deploy
 ```
+This deploys backend "functions" ie the API gateway methods as well as building Angular app in ../web.
