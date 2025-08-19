@@ -15,12 +15,18 @@ initializeApp({
   credential: cert(serviceAccount),
 });
 
+function setCorsHeaders(res) {
+  res.set("Access-Control-Allow-Origin", "https://uveye-bunnies.web.app");
+  res.set("Access-Control-Allow-Headers", "Content-Type");
+}
+
 const db = getFirestore();
 
-export const health = onRequest((_req, res) => (
+export const health = onRequest({ cors: true }, (_req, res) => (
   res.json({ ok: true })
 ));
 
-export const dashboard = onRequest((req, res) => (
-  getDashboard(db, req, res)
-));
+export const dashboard = onRequest((req, res) => {
+  setCorsHeaders(res);
+  getDashboard(db, req, res);
+});
