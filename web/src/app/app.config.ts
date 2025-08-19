@@ -13,13 +13,13 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
     provideHttpClient(withFetch()),
-    provideFirebaseApp(() => initializeApp(environment.firebase || {}),
+    provideFirebaseApp(() => initializeApp(environment.firebase || {})),
     provideFunctions(() => {
       const functions = getFunctions(undefined, 'me-west1');
       if (!environment.production) {
         connectFunctionsEmulator(functions, '127.0.0.1', 5001);
       }
       return functions;
-    })
-  ]
+    }),
+  ],
 };

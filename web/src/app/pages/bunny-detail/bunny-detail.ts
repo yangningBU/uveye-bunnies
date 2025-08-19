@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, ParamMap, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
 interface BunnyDetailModel {
@@ -15,62 +15,7 @@ interface BunnyDetailModel {
 @Component({
   selector: 'app-bunny-detail',
   imports: [CommonModule, RouterLink, FormsModule],
-  template: `
-    <a routerLink="/" class="btn btn-link p-0 mb-3">← Back</a>
-
-    <div *ngIf="bunny() as b">
-      <h3 class="mb-3">{{ b.name }}</h3>
-
-      <div class="row g-3 mb-4">
-        <div class="col-md-3">
-          <div class="card p-3">
-            <div class="text-muted">Happiness</div>
-            <div class="fs-3 fw-bold">{{ b.happiness }}</div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card p-3">
-            <div class="text-muted">Carrots eaten</div>
-            <div class="d-flex align-items-center gap-2">
-              <span class="fs-5">{{ b.carrots_eaten }}</span>
-              <button class="btn btn-sm btn-primary" (click)="increment('INC_CARROT_EATEN')">+1</button>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card p-3">
-            <div class="text-muted">Lettuce eaten</div>
-            <div class="d-flex align-items-center gap-2">
-              <span class="fs-5">{{ b.lettuce_eaten }}</span>
-              <button class="btn btn-sm btn-primary" (click)="increment('INC_LETTUCE_EATEN')">+1</button>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card p-3">
-            <div class="text-muted">Play dates</div>
-            <div class="d-flex align-items-center gap-2">
-              <span class="fs-5">{{ b.play_dates_had }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <form class="row g-2 align-items-end" (ngSubmit)="recordPlayDate()">
-        <div class="col-auto">
-          <label class="form-label d-block">Play with</label>
-          <select class="form-select" [(ngModel)]="selectedFriendId" name="friend">
-            <option value="" disabled selected>Select bunny</option>
-            <option *ngFor="let other of otherBunnies()" [value]="other.id">{{ other.name }}</option>
-          </select>
-        </div>
-        <div class="col-auto">
-          <button class="btn btn-secondary" type="submit" [disabled]="!selectedFriendId">Record play date</button>
-        </div>
-      </form>
-    </div>
-  `,
-  styles: ``
+  templateUrl: './bunny-detail.html',
 })
 export class BunnyDetail {
   private route = new ActivatedRoute();
@@ -80,10 +25,12 @@ export class BunnyDetail {
   selectedFriendId: string = '';
 
   async ngOnInit(): Promise<void> {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (id) {
-      await this.reload(id);
-    }
+    this.route.paramMap.subscribe(async (params: ParamMap) => {
+      const id = params.get('id');
+      if (id) {
+        await this.reload(id);
+      }
+    })
   }
 
   private async reload(id: string): Promise<void> {

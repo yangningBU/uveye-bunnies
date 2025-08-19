@@ -3,7 +3,7 @@ import { onRequest } from "firebase-functions/v2/https";
 import { setGlobalOptions } from "firebase-functions/v2";
 import { initializeApp, cert } from "firebase-admin/app";
 
-import getDashboard from "./functions/dashboard.js";
+import getDashboard from "./endpoints/dashboard.js";
 import serviceAccount from "./credentials.json" with { type: "json" };
 
 setGlobalOptions({

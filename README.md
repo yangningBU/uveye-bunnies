@@ -19,6 +19,20 @@ Endpoints are available at https://me-west1-uveye-bunnies.cloudfunctions.net/<fu
 ```
 cd api
 npm install
-npm run deploy
+```
+
+To make the functions available locally using HTTP parhs which mirror the deployed environment use:
+```
+npm run serve
+```
+Functions will be available at http://localhost:5001/uveye-bunnies/me-west1/<functionName>.
+
+To call functions locally in an interactive console:
+```
 npm run start
+```
+
+To deploy changes to live environment:
+```
+npm run deploy
 ```
