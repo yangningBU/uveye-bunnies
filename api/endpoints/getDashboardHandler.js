@@ -35,11 +35,13 @@ const dashboardFunction = async (db, request, response) => {
     const { bunnyCount, totalHappiness } = metrics;
 
     response.json({
-      // FIXME: bunnies should be paginated
-      bunnies: formatBunnies(bunnies, config),
-      // FIXME: metrics should be from all results, not just paginated
-      bunniesCount: metrics.bunnyCount,
-      happinessAverage: safeHappinessAverage(totalHappiness, bunnyCount),
+      data: {
+        // FIXME: bunnies should be paginated
+        bunnies: formatBunnies(bunnies, config),
+        // FIXME: metrics should be from all results, not just paginated
+        bunniesCount: metrics.bunnyCount,
+        happinessAverage: safeHappinessAverage(totalHappiness, bunnyCount),
+      },
     });
   } catch (error) {
     logger.error("Error handling request", error);

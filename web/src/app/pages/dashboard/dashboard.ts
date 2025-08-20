@@ -11,15 +11,15 @@ import type { BunnyListItem, DashboardResponse } from "../../types";
   templateUrl: './dashboard.html',
 })
 export class Dashboard {
-  newBunnyName = '';
+  functions = inject(Functions);
+
+  loading = signal<boolean>(true);
+  error = signal<string>("");
 
   bunnies = signal<BunnyListItem[]>([]);
   totalCount = signal<number>(0);
   averageHappiness = signal<number>(0);
-  loading = signal<boolean>(true);
-  error = signal<string>("");
-  
-  functions = inject(Functions);
+  newBunnyName = '';
 
   sanitizeName(): void {
     this.newBunnyName = this.newBunnyName.replace(/[^a-zA-Z0-9_-]/g, '');
@@ -30,17 +30,16 @@ export class Dashboard {
   }
 
   async loadDashboard(): Promise<void> {
+    this.error.set("");
+
     try {
       const data = await this.#getDashboardData();
-      console.log("Received data from backend:", data);
-      const { bunnies, bunniesCount, happinessAverage } = data;
-      this.bunnies.set(bunnies);
-      this.totalCount.set(bunniesCount);
-      this.averageHappiness.set(happinessAverage);
-      this.error.set('');
+      this.bunnies.set(data.bunnies);
+      this.totalCount.set(data.bunniesCount);
+      this.averageHappiness.set(data.happinessAverage);
     } catch (err: unknown) {
       console.error(err);
-      this.error.set(err instanceof Error ? err.message : String(err));
+      this.error.set((err as string).toString());
     } finally {
       this.loading.update(() => false);
     }
