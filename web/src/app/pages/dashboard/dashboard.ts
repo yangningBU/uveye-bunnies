@@ -12,11 +12,14 @@ import type { BunnyListItem, DashboardResponse } from "../../types";
   templateUrl: './dashboard.html',
 })
 export class Dashboard {
+  newBunnyName = '';
+
   bunnies = signal<BunnyListItem[]>([]);
   totalCount = signal<number>(0);
   averageHappiness = signal<number>(0);
   loading = signal<boolean>(true);
-  newBunnyName = '';
+  error = signal<string>("");
+  
   functions = inject(Functions);
 
   sanitizeName(): void {
@@ -31,16 +34,12 @@ export class Dashboard {
     try {
       const data = await this.#getDashboardData();
       const { bunnies, bunniesCount, happinessAverage } = data;
-      if (!bunnies || bunniesCount == null || happinessAverage == null) {
-        // TODO: setError("Data from server is invalid.")
-        console.error("Data from server is invalid.", data);
-        return;
-      }
       this.bunnies.set(bunnies);
       this.totalCount.set(bunniesCount);
       this.averageHappiness.set(happinessAverage);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
+      this.error.set(err instanceof Error ? err.message : String(err));
     } finally {
       this.loading.update(() => false);
     }
@@ -64,25 +63,9 @@ export class Dashboard {
   }
 
   async #getDashboardData(): Promise<DashboardResponse> {
-    // Try Firebase Callable first
-    try {
-      const getDashboard = httpsCallable<unknown, DashboardResponse>(this.functions, 'dashboard');
-      const response = await getDashboard();
-      console.info("#getDashboardData response:", response);
-      return response.data;
-    } catch (_err) {
-      console.error(_err);
-  
-      // Fallback to HTTP endpoint
-      const url = `${environment.apiUrl}/dashboard`;
-      const response = await fetch(url);
-  
-      if (!response.ok) {
-        throw new Error('Failed to load dashboard');
-      }
-  
-      return response.json();
-    }
+    const getDashboard = httpsCallable<unknown, DashboardResponse>(this.functions, 'dashboard');
+    const response = await getDashboard();
+    return response.data;
   }
 
   async #createNewBunny() {
@@ -92,15 +75,16 @@ export class Dashboard {
       const createBunny = httpsCallable<{ name: string }, unknown>(this.functions, 'createBunny');
       await createBunny({ name });
       return;
-    } catch (_err) {
-      // Fallback to HTTP endpoint
-      const url = `${environment.apiUrl}/bunnies`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
-      });
-      if (!res.ok) throw new Error('Failed to create bunny.');
+    } catch (err) {
+      console.error(err);
+      // // Fallback to HTTP endpoint
+      // const url = `${environment.apiUrl}/bunnies`;
+      // const res = await fetch(url, {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ name })
+      // });
+      // if (!res.ok) throw new Error('Failed to create bunny.');
     }
   }
 }
