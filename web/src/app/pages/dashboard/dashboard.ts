@@ -16,6 +16,7 @@ export class Dashboard {
   loading = signal<boolean>(true);
   error = signal<string>("");
 
+  // FIXME: should these be Observables?
   bunnies = signal<BunnyListItem[]>([]);
   totalCount = signal<number>(0);
   averageHappiness = signal<number>(0);
@@ -48,18 +49,17 @@ export class Dashboard {
   async createBunny(): Promise<void> {
     if (!this.newBunnyName) return;
 
+    this.error.set("");
     this.loading.update(() => true);
     try {
       await this.#createNewBunny();
     } catch (err) {
       console.error(err);
+      this.error.set((err as string).toString());
     } finally {
       this.newBunnyName = '';
+      this.loading.update(() => false);
     }
-
-    // FIXME: Performance - just add the new bunny to the list
-    // instead of reloading the entire dashboard.
-    await this.loadDashboard();
   }
 
   async #getDashboardData(): Promise<DashboardResponse> {
@@ -70,21 +70,17 @@ export class Dashboard {
 
   async #createNewBunny() {
     const name = this.newBunnyName;
-    // Try Firebase Callable first
-    try {
-      const createBunny = httpsCallable<{ name: string }, unknown>(this.functions, 'createBunny');
-      await createBunny({ name });
-      return;
-    } catch (err) {
-      console.error(err);
-      // // Fallback to HTTP endpoint
-      // const url = `${environment.apiUrl}/bunnies`;
-      // const res = await fetch(url, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ name })
-      // });
-      // if (!res.ok) throw new Error('Failed to create bunny.');
-    }
+    const createBunnyCallable = httpsCallable<{ name: string }, BunnyListItem>(this.functions, 'createBunny');
+    const newBunnyResult = await createBunnyCallable({ name });
+    this.bunnies.update(bs => [...bs, newBunnyResult.data]);
+    const currentTotal = this.totalCount();
+    console.log("currentTotal:", currentTotal);
+    this.totalCount.update(count => count + 1);
+    console.log("newTotal:", this.totalCount());
+    this.averageHappiness.update(currentAverage => {
+      const newAverage = ((currentAverage * currentTotal) + newBunnyResult.data.happinessCount) / this.totalCount();
+      console.log("newAverage:", newAverage);
+      return newAverage;
+    });
   }
 }

@@ -15,7 +15,7 @@ const onCreateListener = async (db, fireBaseEvent) => {
   } else {
     console.warning(
       "The onCreateListener has no associated data. " +
-      `Falling back to direct querying by provided ID ${eventId}.`
+      `Falling back to direct querying by provided ID ${eventId}.`,
     );
     event = await db.collection("events").get(eventId);
   }
@@ -24,7 +24,7 @@ const onCreateListener = async (db, fireBaseEvent) => {
   if (!event) {
     throw new Error(`Event ${eventId} is missing. Aborting onCreateListener.`);
   }
-  
+
   processNewEvent(db, event);
 };
 

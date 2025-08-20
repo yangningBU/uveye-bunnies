@@ -4,7 +4,7 @@ import {
   formatBunnyForDashboard,
   getBunnyFromEventId,
   getConfig,
-  processNewEvent
+  processNewEvent,
 } from "../utilities.js";
 
 const createBunnyCreatedEvent = async (db, name) => {
@@ -16,36 +16,36 @@ const createBunnyCreatedEvent = async (db, name) => {
   });
   const newBunnyRef = await querySnapshot.get();
   return { id: newBunnyRef.id, ...newBunnyRef.data() };
-}
+};
 
 const logCreateBunny = async (db, request, response) => {
-  try{
+  try {
     const name = request?.body?.data?.name;
     if (!name) {
-      throw new Error("Missing valid data.name field in request body.")
-    };
+      throw new Error("Missing valid data.name field in request body.");
+    }
 
     // Consider: what happens if the same bunny
     // is created more than once?
     const newBunnyEvent = await createBunnyCreatedEvent(db, name);
     console.log("New bunny event created: ", newBunnyEvent);
-    
+
     // FIXME: move to onDocumentCreated event listener
     await processNewEvent(db, newBunnyEvent);
 
     const newBunnyRecord = await getBunnyFromEventId(db, newBunnyEvent.id);
     const config = await getConfig(db);
     const formattedResponse = formatBunnyForDashboard(newBunnyRecord, config);
-    
+
     response
       .status(201)
-      .json(formattedResponse);
+      .json({ data: formattedResponse });
   } catch (e) {
     console.error(e);
 
     response
       .status(500)
-      .json({ error: "Create bunny failed." })
+      .json({ error: "Create bunny failed." });
   }
 };
 

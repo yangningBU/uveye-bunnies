@@ -1,10 +1,14 @@
 import * as logger from "firebase-functions/logger";
 import { COLLECTIONS, DEFAULT_METRICS, DOC_SINGLETONS } from "../constants.js";
-import { formatBunnyForDashboard, getConfig, safeHappinessAverage } from "../utilities.js";
+import {
+  formatBunnyForDashboard,
+  getConfig,
+  safeHappinessAverage,
+} from "../utilities.js";
 
 const formatBunnies = (bunnies, config) => {
-  return bunnies.map(bunny => formatBunnyForDashboard(bunny, config));
-}
+  return bunnies.map((bunny) => formatBunnyForDashboard(bunny, config));
+};
 
 const getAggregateSummary = async (db) => {
   const collection = await db.collection(COLLECTIONS.aggregates);
@@ -14,10 +18,12 @@ const getAggregateSummary = async (db) => {
   }
 
   return querySnapshot.data();
-}
+};
 
 const getAllBunnies = async (db) => {
-  const collection = await db.collection(COLLECTIONS.bunnies);
+  const collection = await db
+    .collection(COLLECTIONS.bunnies)
+    .orderBy("createdAt", "desc");
   // FIXME: Add limit and pagination clause here
   const querySnapshot = await collection.get();
   const bunnies = querySnapshot.docs.map((bunny) => ({

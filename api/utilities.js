@@ -1,4 +1,4 @@
-import { FieldValue, Filter } from "firebase-admin/firestore";
+import { FieldValue } from "firebase-admin/firestore";
 import {
   eventTypeToBunnyField,
   COLLECTIONS,
@@ -7,7 +7,7 @@ import {
   DEFAULT_METRICS,
   DOC_SINGLETONS,
   EVENTS,
-  HAPPINESS_FIELD_MAP
+  HAPPINESS_FIELD_MAP,
 } from "./constants.js";
 
 const getLastSnapshotTimestamp = async (db) => {
@@ -19,38 +19,41 @@ const getLastSnapshotTimestamp = async (db) => {
     .where("eventType", "==", EVENTS.snapshot)
     .orderBy("timestamp", "desc")
     .limit(1)
-    .get()
-  
+    .get();
+
   if (snapshots.empty) {
-    console.debug("No snapshots. Grabbing timestamp from first event if it exists.");
+    console.debug(
+      "No snapshots. " +
+      "Grabbing timestamp from first event if it exists.",
+    );
     const firstEvent = await db
       .collection(COLLECTIONS.eventLog)
       .orderBy("timestamp")
       .limit(1)
       .get();
-    
+
     if (!firstEvent.empty) {
-      timestamp = firstEvent.docs.map(x => x.data())[0].timestamp.toDate();
+      timestamp = firstEvent.docs.map((x) => x.data())[0].timestamp.toDate();
     }
   } else {
-    console.debug("Snapshot found.")
-    timestamp = snapshots.docs.map(x => x.timestamp.toDate())[0];
+    console.debug("Snapshot found.");
+    timestamp = snapshots.docs.map((x) => x.timestamp.toDate())[0];
   }
 
   const resolvedTimestamp = timestamp ?? new Date();
   console.log("Returning resolved snapshot timestamp:", resolvedTimestamp);
   return resolvedTimestamp;
-}
+};
 
 const getAllEventsSinceLastSnapshot = async (db) => {
   const snapshotTimestamp = await getLastSnapshotTimestamp(db);
   console.log("Finding all events since timestamp:", snapshotTimestamp);
-  let query = db
+  const querySnapshot = db
     .collection(COLLECTIONS.eventLog)
     .where("timestamp", ">=", snapshotTimestamp)
-    .where("eventType", "in", Object.values(EVENTS.bunny));
+    .where("eventType", "in", Object.values(EVENTS.bunny))
+    .get();
 
-  const querySnapshot = await query.get();
   const results = querySnapshot.docs.map((event) => ({
     id: event.id,
     ...event.data(),
@@ -99,24 +102,24 @@ const calculateAggregates = async (db) => {
   const events = await getAllEventsSinceLastSnapshot(db);
   const config = await getConfig(db);
   // FIXME: start with last snapshot metrics
-  let updatedAggregates = {...DEFAULT_METRICS};
+  let updatedAggregates = { ...DEFAULT_METRICS };
 
-  events.forEach(e => {
+  events.forEach((e) => {
     switch (e.eventType) {
-      case EVENTS.bunny.created: {
-        updatedAggregates.bunnyCount += 1;
-      }
-      case EVENTS.bunny.carrotsEaten: {
-        updatedAggregates.totalCarrotsEaten += 1;
-      }
-      case EVENTS.bunny.lettuceEaten: {
-        updatedAggregates.totalLettuceEaten += 1;
-      }
-      case EVENTS.bunny.playDateHad: {
-        updatedAggregates.totalPlayDatesHad += 1;
-      }
+    case EVENTS.bunny.created:
+      updatedAggregates.bunnyCount += 1;
+      break;
+    case EVENTS.bunny.carrotsEaten:
+      updatedAggregates.totalCarrotsEaten += 1;
+      break;
+    case EVENTS.bunny.lettuceEaten:
+      updatedAggregates.totalLettuceEaten += 1;
+      break;
+    case EVENTS.bunny.playDateHad:
+      updatedAggregates.totalPlayDatesHad += 1;
+      break;
     }
-  })
+  });
 
   updatedAggregates = {
     ...updatedAggregates,
@@ -136,7 +139,7 @@ export function getRandomInt(lower, upper) {
   const min = Math.ceil(lower);
   const max = Math.floor(upper);
   return Math.floor(Math.random() * (max - min + 1)) + min;
-};
+}
 
 export function setCorsHeaders(res) {
   const frontendUrl = process.env.FUNCTIONS_EMULATOR ?
@@ -144,17 +147,18 @@ export function setCorsHeaders(res) {
     "https://uveye-bunnies.web.app";
   res.set("Access-Control-Allow-Origin", frontendUrl);
   res.set("Access-Control-Allow-Headers", "Content-Type");
-};
+}
 
 const getConfigRef = async (db) => {
   return await db
     .collection(COLLECTIONS.config)
     .doc(DOC_SINGLETONS.config)
     .get();
-}
+};
+
 export const getConfig = async (db) => {
   let configRef = getConfigRef(db);
-  
+
   if (!configRef.exists) {
     await db
       .collection(COLLECTIONS.config)
@@ -173,7 +177,11 @@ export const formatBunnyForDashboard = (bunny, config) => ({
 });
 
 export const getBunnyFromEventId = async (db, eventId) => {
-  const querySnapshot = await db.collection(COLLECTIONS.bunnies).doc(eventId).get();
+  const querySnapshot = await db
+    .collection(COLLECTIONS.bunnies)
+    .doc(eventId)
+    .get();
+
   if (!querySnapshot.exists) {
     throw new Error(`Could not find bunny with id ${eventId}.`);
   }
@@ -194,7 +202,9 @@ export const updateAggregates = async (db) => {
     ...updatedState,
     updatedAt: FieldValue.serverTimestamp(),
   });
-  const aggregateSnapshot = await collection.doc(DOC_SINGLETONS.aggregates).get();
+  const aggregateSnapshot = await collection
+    .doc(DOC_SINGLETONS.aggregates)
+    .get();
   const savedNewAggregate = aggregateSnapshot.data();
   console.log("Aggregates saved as:", savedNewAggregate);
   return savedNewAggregate;
@@ -206,22 +216,25 @@ export const updateBunny = async (db, bunnyId, eventType) => {
   const collection = await db.collection(COLLECTIONS.bunnies);
   const querySnapshot = await collection.doc(bunnyId);
   if (querySnapshot.empty) {
-    throw new Error(`Unable to update non-existent bunny with ID ${bunnyId}.`)
+    throw new Error(`Unable to update non-existent bunny with ID ${bunnyId}.`);
   }
 
   const fieldToUpdate = eventTypeToBunnyField(eventType);
   if (!fieldToUpdate) {
-    throw new Error(`Unable to update bunny on non-existent field for event type: ${eventType}`)
+    throw new Error(
+      "Unable to update bunny on non-existent field for event type: " +
+      eventType,
+    );
   }
 
   const currentValue = querySnapshot.doc.data()[fieldToUpdate];
   if (!currentValue && currentValue !== 0) {
     console.error(
-      `Current value for field ${fieldToUpdate}(bunny ${bunnyId}) is missing. ` +
+      `Current value for field ${fieldToUpdate}(ID: ${bunnyId}) is missing. ` +
       "While I will be supplying a default value to ensure the " +
       "system continues to function, you should know that there " +
-      "is a fault in your initializing logic."
-    )
+      "is a fault in your initializing logic.",
+    );
   }
 
   await querySnapshot.update({
@@ -230,7 +243,7 @@ export const updateBunny = async (db, bunnyId, eventType) => {
   });
 
   console.log(`Bunny ${bunnyId} updated ${fieldToUpdate}.`);
-}
+};
 
 export const recordBunny = async (db, bunny) => {
   console.log("Recording new bunny entity...");
@@ -239,18 +252,18 @@ export const recordBunny = async (db, bunny) => {
     ...bunny,
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
-  }
+  };
 
   console.log("Attempting to save this doc:", bunnyDocument);
   // FIXME: what if this fails?
   await collection.doc(bunny.id).set(bunnyDocument);
-  
+
   const newBunnySnapshot = await collection.doc(bunny.id).get();
   const newBunny = newBunnySnapshot.data();
   if (!newBunny) {
     throw new Error("Failed to record bunny entity.");
   }
-  
+
   console.log("Bunny entity saved successfully.");
   return newBunny;
 };
@@ -262,28 +275,28 @@ export const processNewEvent = async (db, event) => {
   }
 
   switch (event.eventType) {
-    case EVENTS.bunny.created: {
-      const newBunny = {
-        ...DEFAULT_BUNNY,
-        ...{ id: event.id, name: event.name }
-      };
-      // FIXME: wrap this in a transaction
-      await recordBunny(db, newBunny);
-      await updateAggregates(db);
-      break;
-    }
-    case EVENTS.bunny.carrotsEaten:
-    case EVENTS.bunny.lettuceEaten:
-      await updateBunny(db, event.bunnyId, event.eventType);
-      await updateAggregates(db);
-      break;
-    case EVENTS.bunny.playDatesHad:
-      await updateBunny(db, event.bunnyId, event.eventType);
-      await updateBunny(db, event.otherBunnyId, event.eventType);
-      await updateAggregates(db);
-      break;
-    default:
-      console.log(`Event listener ignoring event with eventType '${event.eventType}'.`);
+  case EVENTS.bunny.created: {
+    const newBunny = {
+      ...DEFAULT_BUNNY,
+      ...{ id: event.id, name: event.name },
+    };
+    // FIXME: wrap this in a transaction
+    await recordBunny(db, newBunny);
+    await updateAggregates(db);
+    break;
+  }
+  case EVENTS.bunny.carrotsEaten:
+  case EVENTS.bunny.lettuceEaten:
+    await updateBunny(db, event.bunnyId, event.eventType);
+    await updateAggregates(db);
+    break;
+  case EVENTS.bunny.playDatesHad:
+    await updateBunny(db, event.bunnyId, event.eventType);
+    await updateBunny(db, event.otherBunnyId, event.eventType);
+    await updateAggregates(db);
+    break;
+  default:
+    console.log(`Event listener ignoring event type '${event.eventType}'.`);
   }
 
   // TODO: implement this:

@@ -22,7 +22,7 @@ export const DEFAULT_METRICS = {
   bunnyCount: 0,
   totalCarrotsEaten: 0,
   totalLettuceEaten: 0,
-  totalPlayDatesHad: 0
+  totalPlayDatesHad: 0,
 };
 
 export const DOC_SINGLETONS = {
@@ -51,9 +51,8 @@ export const HAPPINESS_FIELD_MAP = {
   playDatesHad: "pointsPlayDatesHad",
 };
 
-
 export const eventTypeToBunnyField = (eventType) => {
   return Object
     .keys(EVENTS.bunny)
-    .find(field => EVENTS.bunny[field] === eventType)
+    .find((field) => EVENTS.bunny[field] === eventType);
 };
