@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Functions, httpsCallable } from '@angular/fire/functions';
-import { environment } from '../../../environments/environment';
 import type { BunnyListItem, DashboardResponse } from "../../types";
 
 @Component({
@@ -33,10 +32,12 @@ export class Dashboard {
   async loadDashboard(): Promise<void> {
     try {
       const data = await this.#getDashboardData();
+      console.log("Received data from backend:", data);
       const { bunnies, bunniesCount, happinessAverage } = data;
       this.bunnies.set(bunnies);
       this.totalCount.set(bunniesCount);
       this.averageHappiness.set(happinessAverage);
+      this.error.set('');
     } catch (err: unknown) {
       console.error(err);
       this.error.set(err instanceof Error ? err.message : String(err));

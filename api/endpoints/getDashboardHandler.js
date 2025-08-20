@@ -1,15 +1,23 @@
 import * as logger from "firebase-functions/logger";
-import { DEFAULT_METRICS } from "../constants.js";
-import { safeHappinessAverage } from "../utilities.js";
+import { COLLECTIONS, DEFAULT_METRICS, DOC_SINGLETONS } from "../constants.js";
+import { formatBunnyForDashboard, getConfig, safeHappinessAverage } from "../utilities.js";
+
+const formatBunnies = (bunnies, config) => {
+  return bunnies.map(bunny => formatBunnyForDashboard(bunny, config));
+}
 
 const getAggregateSummary = async (db) => {
-  const collection = await db.collection("aggregates");
-  const querySnapshot = await collection.get("summary");
-  return querySnapshot.docs.map(a => a.data())[0] ?? DEFAULT_METRICS;
+  const collection = await db.collection(COLLECTIONS.aggregates);
+  const querySnapshot = await collection.doc(DOC_SINGLETONS.aggregates).get();
+  if (!querySnapshot.exists) {
+    return DEFAULT_METRICS;
+  }
+
+  return querySnapshot.data();
 }
 
 const getAllBunnies = async (db) => {
-  const collection = await db.collection("bunnies");
+  const collection = await db.collection(COLLECTIONS.bunnies);
   // FIXME: Add limit and pagination clause here
   const querySnapshot = await collection.get();
   const bunnies = querySnapshot.docs.map((bunny) => ({
@@ -23,12 +31,12 @@ const dashboardFunction = async (db, request, response) => {
   try {
     const bunnies = await getAllBunnies(db);
     const metrics = await getAggregateSummary(db);
+    const config = await getConfig(db);
     const { bunnyCount, totalHappiness } = metrics;
 
-    logger.info("Firestore results", bunnies, metrics);
     response.json({
       // FIXME: bunnies should be paginated
-      bunnies,
+      bunnies: formatBunnies(bunnies, config),
       // FIXME: metrics should be from all results, not just paginated
       bunniesCount: metrics.bunnyCount,
       happinessAverage: safeHappinessAverage(totalHappiness, bunnyCount),

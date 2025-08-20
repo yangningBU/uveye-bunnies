@@ -1,27 +1,45 @@
 import { FieldValue } from "firebase-admin/firestore";
-import { EVENTS } from "../constants.js";
+import { COLLECTIONS, EVENTS } from "../constants.js";
+import {
+  formatBunnyForDashboard,
+  getBunnyFromEventId,
+  getConfig,
+  processNewEvent
+} from "../utilities.js";
 
-const createBunny = async (db, request, response) => {
-  console.log("REACHED CREATEBUNNY", request.body);
+const createBunnyCreatedEvent = async (db, name) => {
+  const collection = await db.collection(COLLECTIONS.eventLog);
+  const querySnapshot = await collection.add({
+    name,
+    eventType: EVENTS.bunny.created,
+    timestamp: FieldValue.serverTimestamp(),
+  });
+  const newBunnyRef = await querySnapshot.get();
+  return { id: newBunnyRef.id, ...newBunnyRef.data() };
+}
+
+const logCreateBunny = async (db, request, response) => {
   try{
-    const { name } = request?.body?.data;
+    const name = request?.body?.data?.name;
     if (!name) {
-      throw new Error("Missing valid name field.")
+      throw new Error("Missing valid data.name field in request body.")
     };
 
     // Consider: what happens if the same bunny
     // is created more than once?
-    const collection = await db.collection('events');
-    const newBunnyRef = await collection.add({
-      eventType: EVENTS.bunny.created,
-      name,
-      timestamp: FieldValue.serverTimestamp(),
-    });
-    const newBunnyDoc = await newBunnyRef.get();
-    console.log("New bunny event:", newBunnyDoc);
+    const newBunnyEvent = await createBunnyCreatedEvent(db, name);
+    console.log("New bunny event created: ", newBunnyEvent);
+    
+    // FIXME: move to onDocumentCreated event listener
+    await processNewEvent(db, newBunnyEvent);
+
+    const newBunnyRecord = await getBunnyFromEventId(db, newBunnyEvent.id);
+    const config = await getConfig(db);
+    const formattedResponse = formatBunnyForDashboard(newBunnyRecord, config);
+    
     response
       .status(201)
-      .json({ id: newBunnyDoc.id, ...newBunnyDoc.data() });
+      .json(formattedResponse);
   } catch (e) {
     console.error(e);
 
@@ -31,4 +49,4 @@ const createBunny = async (db, request, response) => {
   }
 };
 
-export default createBunny;
+export default logCreateBunny;

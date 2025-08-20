@@ -36,6 +36,6 @@ export const createBunny = onRequest((req, res) => {
 });
 
 export const onCreateTrigger = onDocumentWritten(
-  "events",
+  "events/{eventId}",
   (event) => onCreateListener(db, event),
 );

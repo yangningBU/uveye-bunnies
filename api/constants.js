@@ -1,13 +1,21 @@
+export const COLLECTIONS = {
+  config: "config",
+  eventLog: "events",
+  bunnies: "bunnies",
+  aggregates: "aggregates",
+};
+
 export const DEFAULT_BUNNY = {
-  carrotsEaten: 0,
-  lettuceEaten: 0,
-  playDatesHad: 0,
+  carrotsEaten: 1,
+  lettuceEaten: 1,
+  playDatesHad: 1,
 };
 
 export const DEFAULT_CONFIG = {
   pointsCarrotsEaten: 3,
   pointsLettuceEaten: 1,
   pointsPlayDatesHad: 2,
+  eventCountTriggerForSnapshot: 100,
 };
 
 export const DEFAULT_METRICS = {
@@ -17,16 +25,35 @@ export const DEFAULT_METRICS = {
   totalPlayDatesHad: 0
 };
 
+export const DOC_SINGLETONS = {
+  config: "config",
+  aggregates: "summary",
+};
+
 export const EVENTS = {
   bunny: {
     created: "bunny.created",
-    carrotsEaten: "bunny.carrots.eaten",
-    lettuceEaten: "bunny.lettuce.eaten",
-    playDatesHad: "bunny.playDatesHad",
+    carrotsEaten: "bunny.carrotsEaten",
+    lettuceEaten: "bunny.lettuceEaten",
+    playDateHad: "bunny.playDateHad",
   },
   config: {
     setCarrotPoints: "config.setCarrotPoints",
     setLettucePoints: "config.setLettucePoints",
     setPlayDatePoints: "config.setPlayDatePoints",
   },
+  snapshot: "meta.snapshot",
+};
+
+export const HAPPINESS_FIELD_MAP = {
+  carrotsEaten: "pointsCarrotsEaten",
+  lettuceEaten: "pointsLettuceEaten",
+  playDatesHad: "pointsPlayDatesHad",
+};
+
+
+export const eventTypeToBunnyField = (eventType) => {
+  return Object
+    .keys(EVENTS.bunny)
+    .find(field => EVENTS.bunny[field] === eventType)
 };
