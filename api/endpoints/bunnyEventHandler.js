@@ -19,7 +19,8 @@ const getReturnObjectForLoggedEvent = async (db, newEvent) => {
 
   switch (newEvent.eventType) {
   case EVENTS.bunny.carrotsEaten:
-  case EVENTS.bunny.lettuceEaten: {
+  case EVENTS.bunny.lettuceEaten:
+  case EVENTS.bunny.playDateHad: {
     const updatedRecord = await getBunnyById(db, newEvent.bunnyId);
     const value = getBunnyFieldValue(newEvent.eventType, updatedRecord);
     const config = await getConfig(db);

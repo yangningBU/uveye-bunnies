@@ -30,6 +30,12 @@ export const DOC_SINGLETONS = {
   aggregates: "summary",
 };
 
+export const EVENT_TO_BUNNY_FIELD_MAP = {
+  "bunny.carrotsEaten": "carrotsEaten",
+  "bunny.lettuceEaten": "lettuceEaten",
+  "bunny.playDateHad": "playDatesHad",
+};
+
 export const EVENTS = {
   bunny: {
     created: "bunny.created",
@@ -45,7 +51,7 @@ export const EVENTS = {
   snapshot: "meta.snapshot",
 };
 
-export const HAPPINESS_FIELD_MAP = {
+export const HAPPINESS_CONFIG_FIELD_MAP = {
   carrotsEaten: "pointsCarrotsEaten",
   lettuceEaten: "pointsLettuceEaten",
   playDatesHad: "pointsPlayDatesHad",
@@ -59,7 +65,5 @@ export const REQUIRED_EVENT_FIELDS = {
 };
 
 export const eventTypeToBunnyField = (eventType) => {
-  return Object
-    .keys(EVENTS.bunny)
-    .find((field) => EVENTS.bunny[field] === eventType);
+  return EVENT_TO_BUNNY_FIELD_MAP[eventType];
 };

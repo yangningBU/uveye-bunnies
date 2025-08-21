@@ -8,7 +8,7 @@ import {
   DEFAULT_METRICS,
   DOC_SINGLETONS,
   EVENTS,
-  HAPPINESS_FIELD_MAP,
+  HAPPINESS_CONFIG_FIELD_MAP,
   REQUIRED_EVENT_FIELDS,
 } from "./constants.js";
 
@@ -90,7 +90,7 @@ const getAllEventsSinceLastSnapshot = async (db) => {
 
 export const calculateHappiness = (bunnyDoc, config) => {
   const result = Object
-    .entries(HAPPINESS_FIELD_MAP)
+    .entries(HAPPINESS_CONFIG_FIELD_MAP)
     .map(([bunnyField, configField]) => {
       let propertyCount = bunnyDoc[bunnyField];
       let weight = config[configField];
