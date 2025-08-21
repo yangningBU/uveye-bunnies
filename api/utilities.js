@@ -339,7 +339,7 @@ export const validateEventFields = (eventType, requestPayload) => {
   const requiredFields = EVENT_FIELDS[eventType];
   return Object
     .keys(requestPayload)
-    .filter(field => requiredFields.includes(field))
+    .filter((field) => requiredFields.includes(field))
     .reduce((filtered, field) => {
       filtered[field] = requestPayload[field];
       return filtered;
