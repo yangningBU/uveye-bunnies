@@ -313,8 +313,8 @@ export const applyNewState = async (db, newState) => {
     const doc = db.collection(COLLECTIONS.bunnies).doc(entity.id);
     batch.set(doc, entity);
   });
-  
-  await batch.commit()
+
+  await batch.commit();
 };
 
 export const incrementBunnyField = async (db, bunnyId, eventType) => {
