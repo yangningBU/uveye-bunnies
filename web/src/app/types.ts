@@ -19,4 +19,15 @@ interface DashboardResponse {
   happinessAverage: number;
 }
 
-export type { BunnyDetailModel, BunnyListItem, DashboardResponse };
+interface PlayDateEventRequest {
+  eventType: string;
+  bunnyId: string;
+  otherBunnyId: string;
+}
+
+export type {
+  BunnyDetailModel,
+  BunnyListItem,
+  DashboardResponse,
+  PlayDateEventRequest,
+};

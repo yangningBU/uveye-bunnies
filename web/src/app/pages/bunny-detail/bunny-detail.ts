@@ -11,7 +11,8 @@ import _ from 'lodash';
 import type {
   BunnyDetailModel,
   BunnyListItem,
-  DashboardResponse
+  DashboardResponse,
+  PlayDateEventRequest,
 } from "../../types";
 
 @Component({
@@ -117,14 +118,25 @@ export class BunnyDetail {
   async recordPlayDate(): Promise<void> {
     if (!this.bunny() || !this.selectedFriendId) return;
     try {
-      const res = await fetch('/api/events', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bunny_id: this.bunny()!.id, play_date_id: this.selectedFriendId, name: 'INC_PLAY_DATE_HAD', count: 1 })
+      // FIXME change bunny.carrotsEaten event to bunny.carrotEaten;
+      const eventType = 'bunny.playDateHad';
+      const recordPlayDateEvent = httpsCallable<PlayDateEventRequest, { count: number, happiness: number }>(this.functions, 'recordBunnyEvent');
+      const updatedResult = await recordPlayDateEvent({
+        eventType,
+        bunnyId: this.bunnyId,
+        otherBunnyId: this.selectedFriendId,
       });
-      if (!res.ok) throw new Error('Failed to record play date');
+      const count = updatedResult.data.count;
+      const newHappiness = updatedResult.data.happiness;
+      if (!_.isNumber(count) || !_.isNumber(newHappiness)) {
+        throw new Error('Failed to record event.');
+      }
+
+      const current = this.bunny();
+      if (current) {
+        this.bunny.set({ ...current, playDatesHad: count, happiness: newHappiness });
+      }
       this.selectedFriendId = '';
-      await this.reload(this.bunny()!.id);
     } catch (err) {
       console.error(err);
     }
