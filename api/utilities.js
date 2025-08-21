@@ -146,6 +146,7 @@ const calculateAggregatesAndEntities = async (db) => {
       const newBunny = {
         ...DEFAULT_BUNNY,
         id: e.id,
+        name: e.name,
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
       };
