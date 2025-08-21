@@ -1,4 +1,4 @@
-import { processNewEvent } from "../utilities.js";
+import { triggerUpdateToState } from "../utilities.js";
 
 const onCreateListener = async (db, fireBaseEvent) => {
   console.log("!!onCreate triggered. Event: ", fireBaseEvent);
@@ -25,7 +25,7 @@ const onCreateListener = async (db, fireBaseEvent) => {
     throw new Error(`Event ${eventId} is missing. Aborting onCreateListener.`);
   }
 
-  processNewEvent(db, event);
+  await triggerUpdateToState(db, event);
 };
 
 export default onCreateListener;

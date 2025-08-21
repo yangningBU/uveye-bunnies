@@ -2,19 +2,35 @@ import _ from "lodash";
 import { FieldValue } from "firebase-admin/firestore";
 import {
   COLLECTIONS,
-  EVENT_TO_BUNNY_PROPERTY,
-  EVENT_FIELDS,
   EVENTS,
+  REQUIRED_EVENT_FIELDS,
 } from "../constants.js";
 import {
-  formatBunnyForDetailsPage,
-  getBunnyFromEventId,
-  getConfig,
-  processNewEvent,
+  getBunnyById,
+  getBunnyFieldValue,
+  triggerUpdateToState,
   validateEventFields,
 } from "../utilities.js";
 
-const createBunnyEvent = async (db, eventType, validEventFields) => {
+const getReturnObjectForLoggedEvent = async (db, newEvent) => {
+  let out;
+
+  switch (newEvent.eventType) {
+  case EVENTS.bunny.carrotsEaten:
+  case EVENTS.bunny.lettuceEaten: {
+    const updatedRecord = await getBunnyById(db, newEvent.bunnyId);
+    const value = getBunnyFieldValue(newEvent.eventType, updatedRecord);
+    out = { count: value };
+    break;
+  }
+  default:
+    console.error("Unsupported event type: ", newEvent.eventType);
+  }
+
+  return out;
+};
+
+const recordEvent = async (db, eventType, validEventFields) => {
   const collection = await db.collection(COLLECTIONS.eventLog);
   const querySnapshot = await collection.add({
     eventType,
@@ -51,20 +67,12 @@ const logBunnyEvent = async (db, request, response) => {
     );
     const receivedAllRequiredFields = _.isEqual(
       Object.keys(validEventFields),
-      EVENT_FIELDS[eventType],
-    );
-    console.debug(
-      "requestPayload:",
-      request.body.data,
-      "validEventFields:",
-      validEventFields,
-      "receivedAllRequiredFields:",
-      receivedAllRequiredFields,
+      REQUIRED_EVENT_FIELDS[eventType],
     );
     if (!receivedAllRequiredFields) {
       const msg = (
         `eventType "${eventType}" requires "` +
-        EVENT_FIELDS[eventType].join(", ")
+        REQUIRED_EVENT_FIELDS[eventType].join(", ")
       );
       response
         .status(400)
@@ -72,25 +80,13 @@ const logBunnyEvent = async (db, request, response) => {
       return;
     }
 
-    const newBunnyEvent = await createBunnyEvent(
-      db,
-      eventType,
-      validEventFields,
-    );
-    console.log("New bunny event created: ", newBunnyEvent);
+    const newEvent = await recordEvent(db, eventType, validEventFields);
+    console.log("New event created: ", newEvent);
 
     // FIXME: move to onDocumentCreated event listener
-    await processNewEvent(db, newBunnyEvent);
+    await triggerUpdateToState(db, newEvent);
 
-    // FIXME: I tried to generalize this function, which perhaps was a
-    // mistake but for now I'm expecting there to be a bunnyId on the
-    // request payload (and consequently event)
-    const newBunnyRecord = await getBunnyFromEventId(db, newBunnyEvent.bunnyId);
-    const config = await getConfig(db);
-    const formattedResponse = formatBunnyForDetailsPage(newBunnyRecord, config);
-    console.debug("logBunnyEvent.formattedResponse:", formattedResponse);
-    const fieldToReturn = EVENT_TO_BUNNY_PROPERTY[eventType];
-    const out = { count: formattedResponse[fieldToReturn] };
+    const out = await getReturnObjectForLoggedEvent(db, newEvent);
     console.log("Returning:", out);
 
     response

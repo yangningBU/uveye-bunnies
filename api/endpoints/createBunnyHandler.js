@@ -2,9 +2,9 @@ import { FieldValue } from "firebase-admin/firestore";
 import { COLLECTIONS, EVENTS } from "../constants.js";
 import {
   formatBunnyForDashboard,
-  getBunnyFromEventId,
+  getBunnyById,
   getConfig,
-  processNewEvent,
+  triggerUpdateToState,
 } from "../utilities.js";
 
 const createBunnyCreatedEvent = async (db, name) => {
@@ -33,9 +33,9 @@ const logCreateBunny = async (db, request, response) => {
     console.log("New bunny event created: ", newBunnyEvent);
 
     // FIXME: move to onDocumentCreated event listener
-    await processNewEvent(db, newBunnyEvent);
+    await triggerUpdateToState(db, newBunnyEvent);
 
-    const newBunnyRecord = await getBunnyFromEventId(db, newBunnyEvent.id);
+    const newBunnyRecord = await getBunnyById(db, newBunnyEvent.id);
     const config = await getConfig(db);
     const formattedResponse = formatBunnyForDashboard(newBunnyRecord, config);
 

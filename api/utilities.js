@@ -7,15 +7,13 @@ import {
   DEFAULT_CONFIG,
   DEFAULT_METRICS,
   DOC_SINGLETONS,
-  EVENT_FIELDS,
   EVENTS,
   HAPPINESS_FIELD_MAP,
+  REQUIRED_EVENT_FIELDS,
 } from "./constants.js";
 
-const getLastSnapshotTimestamp = async (db) => {
-  console.debug("Getting last snapshot timestamp.");
-  let timestamp;
-
+const getLastSnapshot = async (db) => {
+  console.debug("Getting last snapshot...");
   const snapshots = await db
     .collection(COLLECTIONS.eventLog)
     .where("eventType", "==", EVENTS.snapshot)
@@ -24,8 +22,23 @@ const getLastSnapshotTimestamp = async (db) => {
     .get();
 
   if (snapshots.empty) {
+    console.debug("No snapshots.");
+  } else {
+    console.log("Snapshot found.");
+    return snapshots.docs[0].data();
+  }
+};
+
+const getCutOffTimestamp = async (db, lastSnapshot) => {
+  console.debug("Getting last snapshot timestamp.");
+  let timestamp;
+
+  if (lastSnapshot) {
+    console.debug("Snapshot found.");
+    timestamp = lastSnapshot.timestamp.toDate();
+  } else {
     console.debug(
-      "No snapshots. " +
+      "No snapshot. " +
       "Grabbing timestamp from first event if it exists.",
     );
     const firstEvent = await db
@@ -35,11 +48,11 @@ const getLastSnapshotTimestamp = async (db) => {
       .get();
 
     if (!firstEvent.empty) {
+      console.debug("First event found. Getting timestamp.");
       timestamp = firstEvent.docs.map((x) => x.data())[0].timestamp.toDate();
+    } else {
+      console.debug("No events at all. Deferring to now().");
     }
-  } else {
-    console.debug("Snapshot found.");
-    timestamp = snapshots.docs.map((x) => x.timestamp.toDate())[0];
   }
 
   const resolvedTimestamp = timestamp ?? new Date();
@@ -48,11 +61,12 @@ const getLastSnapshotTimestamp = async (db) => {
 };
 
 const getAllEventsSinceLastSnapshot = async (db) => {
-  const snapshotTimestamp = await getLastSnapshotTimestamp(db);
-  console.log("Finding all events since timestamp:", snapshotTimestamp);
+  const lastSnapshot = await getLastSnapshot(db);
+  const cutOffTimestamp = await getCutOffTimestamp(db, lastSnapshot);
+  console.log("Finding all events since timestamp:", cutOffTimestamp);
   const querySnapshot = await db
     .collection(COLLECTIONS.eventLog)
-    .where("timestamp", ">=", snapshotTimestamp)
+    .where("timestamp", ">=", cutOffTimestamp)
     .where("eventType", "in", Object.values(EVENTS.bunny))
     .get();
 
@@ -68,7 +82,10 @@ const getAllEventsSinceLastSnapshot = async (db) => {
 
   console.log(`${results.length} events found.`);
   console.debug(results);
-  return results;
+  return {
+    events: results,
+    lastSnapshot: lastSnapshot ?? DEFAULT_METRICS,
+  };
 };
 
 const calculateHappiness = (bunnyDoc, config) => {
@@ -83,7 +100,7 @@ const calculateHappiness = (bunnyDoc, config) => {
         propertyCount = DEFAULT_BUNNY[bunnyField];
       }
 
-      if (propertyCount == null) {
+      if (weight == null) {
         console.warn(`Config ${configField} is unset. Using default weight.`);
         weight = DEFAULT_CONFIG[configField];
       }
@@ -106,37 +123,91 @@ const calculateDownstreamMetrics = (metrics, config = DEFAULT_CONFIG) => {
   return dependentMetrics;
 };
 
-const calculateAggregates = async (db) => {
-  // const snapshot = getLastSnapshot();
-  const events = await getAllEventsSinceLastSnapshot(db);
-  const config = await getConfig(db);
-  // FIXME: start with last snapshot metrics
-  let updatedAggregates = { ...DEFAULT_METRICS };
+const findBunnyInListOrDB = (list, db, bunnyId) => {
+  const listMatch = list.find((b) => b.id === bunnyId);
+  if (listMatch) return listMatch;
 
-  events.forEach((e) => {
+  const dbMatch = getBunnyById(db, bunnyId);
+  if (dbMatch) return dbMatch;
+
+  console.debug(`Unable to find bunny by ID ${bunnyId} in list or DB.`);
+};
+
+const calculateAggregatesAndEntities = async (db) => {
+  const eventsAndSnapshot = await getAllEventsSinceLastSnapshot(db);
+  const config = await getConfig(db);
+
+  const entities = [];
+  const aggregateCollector = eventsAndSnapshot.lastSnapshot;
+
+  eventsAndSnapshot.events.forEach((e) => {
     switch (e.eventType) {
-    case EVENTS.bunny.created:
-      updatedAggregates.bunnyCount += 1;
+    case EVENTS.bunny.created: {
+      const newBunny = {
+        ...DEFAULT_BUNNY,
+        id: e.id,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      };
+      entities.push(newBunny);
+      aggregateCollector.bunnyCount += 1;
       break;
-    case EVENTS.bunny.carrotsEaten:
-      updatedAggregates.totalCarrotsEaten += 1;
+    }
+    case EVENTS.bunny.carrotsEaten: {
+      const matchingBunny = findBunnyInListOrDB(entities, db, e.bunnyId);
+      if (matchingBunny) {
+        matchingBunny.carrotsEaten += 1;
+        aggregateCollector.totalCarrotsEaten += 1;
+        entities.push(matchingBunny);
+      } else {
+        console.warn(
+          "Attempting to increment carrot count on bunny that hasn't been " +
+          "created yet. Skipping.",
+        );
+      }
       break;
-    case EVENTS.bunny.lettuceEaten:
-      updatedAggregates.totalLettuceEaten += 1;
+    }
+    case EVENTS.bunny.lettuceEaten: {
+      const matchingBunny = findBunnyInListOrDB(entities, db, e.bunnyId);
+      if (matchingBunny) {
+        matchingBunny.lettuceEaten += 1;
+        aggregateCollector.totalLettuceEaten += 1;
+        entities.push(matchingBunny);
+      } else {
+        console.warn(
+          "Attempting to increment lettuce count on bunny that hasn't been " +
+          "created yet. Skipping.",
+        );
+      }
       break;
-    case EVENTS.bunny.playDateHad:
-      updatedAggregates.totalPlayDatesHad += 1;
+    }
+    case EVENTS.bunny.playDateHad: {
+      const matchingBunny = findBunnyInListOrDB(entities, db, e.bunnyId);
+      const otherBunny = findBunnyInListOrDB(entities, db, e.otherBunnyId);
+      if (matchingBunny && otherBunny) {
+        matchingBunny.playDatesHad += 1;
+        otherBunny.playDatesHad += 1;
+        aggregateCollector.totalPlayDatesHad += 1;
+        entities.push(matchingBunny);
+      } else {
+        console.warn(
+          "Attempting to record playdate with bunny that hasn't been " +
+          "created yet. Skipping.",
+        );
+      }
       break;
+    }
     }
   });
 
-  updatedAggregates = {
-    ...updatedAggregates,
-    ...calculateDownstreamMetrics(updatedAggregates, config),
+  const aggregates = {
+    ...aggregateCollector,
+    ...calculateDownstreamMetrics(aggregateCollector, config),
   };
-  console.log("Calculated total metrics:", updatedAggregates);
+  console.log("Calculated total metrics:", aggregates);
+  console.log(`There are ${entities.length} entities to upsert.`);
 
-  return updatedAggregates;
+  return { aggregates, entities };
 };
 
 export const safeHappinessAverage = (totalHappiness, bunnyCount) => {
@@ -200,30 +271,35 @@ export const formatBunnyForDetailsPage = (bunny, config) => {
   };
 };
 
-export const getBunnyFromEventId = async (db, eventId) => {
+export const getBunnyFieldValue = (eventType, newBunnyRecord) => {
+  const fieldToReturn = eventTypeToBunnyField(eventType);
+  return newBunnyRecord[fieldToReturn];
+};
+
+export const getBunnyById = async (db, bunnyId) => {
   const querySnapshot = await db
     .collection(COLLECTIONS.bunnies)
-    .doc(eventId)
+    .doc(bunnyId)
     .get();
 
   if (!querySnapshot.exists) {
-    throw new Error(`Could not find bunny with id ${eventId}.`);
+    console.info(`Could not find bunny with id ${bunnyId}.`);
+    return;
   }
 
   return {
-    id: eventId,
+    id: bunnyId,
     ...querySnapshot.data(),
   };
 };
 
-export const updateAggregates = async (db) => {
+export const applyNewState = async (db, newState) => {
   console.log("Updating aggregate metrics...");
-  const updatedState = await calculateAggregates(db);
-  console.debug("New metrics will be:", updatedState);
+  console.debug("New metrics will be:", newState.aggregates);
   const collection = await db.collection(COLLECTIONS.aggregates);
   // FIXME: what if this fails?
   await collection.doc(DOC_SINGLETONS.aggregates).set({
-    ...updatedState,
+    ...newState.aggregates,
     updatedAt: FieldValue.serverTimestamp(),
   });
   const aggregateSnapshot = await collection
@@ -231,7 +307,14 @@ export const updateAggregates = async (db) => {
     .get();
   const savedNewAggregate = aggregateSnapshot.data();
   console.log("Aggregates saved as:", savedNewAggregate);
-  return savedNewAggregate;
+
+  const batch = db.batch();
+  newState.entities.forEach((entity) => {
+    const doc = db.collection(COLLECTIONS.bunnies).doc(entity.id);
+    batch.set(doc, entity);
+  });
+  
+  await batch.commit()
 };
 
 export const incrementBunnyField = async (db, bunnyId, eventType) => {
@@ -241,11 +324,12 @@ export const incrementBunnyField = async (db, bunnyId, eventType) => {
   const doc = await collection.doc(bunnyId);
   const querySnapshot = await doc.get();
   if (querySnapshot.empty) {
-    throw new Error(`Unable to update non-existent bunny with ID ${bunnyId}.`);
+    console.error(`Unable to update non-existent bunny with ID ${bunnyId}.`);
+    return;
   }
 
   const fieldToUpdate = eventTypeToBunnyField(eventType);
-  if (!fieldToUpdate) {
+  if (_.isEmpty(fieldToUpdate)) {
     throw new Error(
       "Unable to update bunny on non-existent field for event type: " +
       eventType,
@@ -263,7 +347,7 @@ export const incrementBunnyField = async (db, bunnyId, eventType) => {
   }
 
   await doc.update({
-    [fieldToUpdate]: (currentValue ?? 0) + 1,
+    [fieldToUpdate]: (currentValue ?? DEFAULT_BUNNY[fieldToUpdate]) + 1,
     updatedAt: FieldValue.serverTimestamp(),
   });
 
@@ -293,38 +377,15 @@ export const recordBunny = async (db, bunny) => {
   return newBunny;
 };
 
-export const processNewEvent = async (db, event) => {
+export const triggerUpdateToState = async (db, event) => {
   console.log("Triggering downstream processing following event...");
   if (!event) {
     throw new Error("Unable to process missing event.");
   }
 
-  // FIXME: Refactor so that resulting entity states is also a product
-  // of iterating over events like in updateAggregates / calculateAggregates
-  switch (event.eventType) {
-  case EVENTS.bunny.created: {
-    const newBunny = {
-      ...DEFAULT_BUNNY,
-      ...{ id: event.id, name: event.name },
-    };
-    // FIXME: wrap this in a transaction
-    await recordBunny(db, newBunny);
-    await updateAggregates(db);
-    break;
-  }
-  case EVENTS.bunny.carrotsEaten:
-  case EVENTS.bunny.lettuceEaten:
-    await incrementBunnyField(db, event.bunnyId, event.eventType);
-    await updateAggregates(db);
-    break;
-  case EVENTS.bunny.playDateHad:
-    await incrementBunnyField(db, event.bunnyId, event.eventType);
-    await incrementBunnyField(db, event.otherBunnyId, event.eventType);
-    await updateAggregates(db);
-    break;
-  default:
-    console.log(`Event listener ignoring event type '${event.eventType}'.`);
-  }
+  const newState = await calculateAggregatesAndEntities(db);
+
+  await applyNewState(db, newState);
 
   // TODO: implement this:
   // const config = getConfig(db);
@@ -336,7 +397,7 @@ export const processNewEvent = async (db, event) => {
 };
 
 export const validateEventFields = (eventType, requestPayload) => {
-  const requiredFields = EVENT_FIELDS[eventType];
+  const requiredFields = REQUIRED_EVENT_FIELDS[eventType];
   return Object
     .keys(requestPayload)
     .filter((field) => requiredFields.includes(field))

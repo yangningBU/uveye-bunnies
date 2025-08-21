@@ -46,7 +46,8 @@ const dashboardFunction = async (db, request, response) => {
     response.json({
       data: {
         bunnies: formatBunnies(bunnies, config),
-        bunniesCount: metrics.bunnyCount,
+        bunniesCount: bunnyCount,
+        totalHappiness,
         happinessAverage: safeHappinessAverage(totalHappiness, bunnyCount),
       },
     });
