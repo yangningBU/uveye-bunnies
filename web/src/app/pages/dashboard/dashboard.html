@@ -3,46 +3,50 @@
     {{ error() }}
   </div>
 }
-<div class="row" [ngClass]="{ 'd-flex justify-content-center': loading() }">
-  @if (loading()) {
-    <div class="spinner-grow" role="status">
-      <span class="visually-hidden">Loading...</span>
-    </div>
-  } @else {
-    <div class="row mb-4">
-      <div class="col-auto">
-        <div class="card p-3">
-          <div class="text-muted">Total bunnies</div>
-          <div class="fs-3 fw-bold">{{ totalCount() }}</div>
+<div class="row position-relative" id="dashboardContent">
+    @if (loading()) {
+      <div class="row position-absolute" id="loadingContainer">
+        <div class="spinner-border position-absolute" role="status" id="loadingBox">
+          <span class="visually-hidden">Loading...</span>
         </div>
       </div>
-      <div class="col-auto">
-        <div class="card p-3">
-          <div class="text-muted">Average happiness</div>
-          <div class="fs-3 fw-bold">{{ averageHappiness() | number:'1.1-1' }}</div>
-        </div>
+    }
+  <div class="row mb-4">
+    <div class="col-auto">
+      <div class="card p-3">
+        <div class="text-muted">Total bunnies</div>
+        <div class="fs-3 fw-bold">{{ totalCount() }}</div>
       </div>
     </div>
+    <div class="col-auto">
+      <div class="card p-3">
+        <div class="text-muted">Average happiness</div>
+        <div class="fs-3 fw-bold">{{ averageHappiness() | number:'1.1-1' }}</div>
+      </div>
+    </div>
+  </div>
 
-    <form class="row g-2 mb-4" (ngSubmit)="createBunny()">
-      <div class="col-auto">
-        <input class="form-control" placeholder="New bunny name" name="name" [(ngModel)]="newBunnyName" (input)="sanitizeName()" />
-      </div>
-      <div class="col-auto">
-        <button class="btn btn-primary" type="submit" [disabled]="!newBunnyName">Add Bunny</button>
-      </div>
-    </form>
+  <form class="row g-2 mb-4" (ngSubmit)="createBunny()">
+    <div class="col-auto">
+      <input class="form-control" placeholder="New bunny name" name="name" [(ngModel)]="newBunnyName" (input)="sanitizeName()" />
+    </div>
+    <div class="col-auto">
+      <button class="btn btn-primary" type="submit" [disabled]="!newBunnyName">Add Bunny</button>
+    </div>
+  </form>
 
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
-      <div class="col" *ngFor="let b of bunnies()">
-        <div class="card h-100">
-          <div class="card-body">
-            <h5 class="card-title">{{ b.name }}</h5>
-            <p class="card-text mb-2">Happiness: {{ b.happinessCount }}</p>
-            <a class="btn btn-outline-secondary btn-sm" [routerLink]="['/bunnies', b.id]">Open</a>
-          </div>
+  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+    <div class="col" *ngFor="let b of bunnies()">
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="card-title">{{ b.name }}</h5>
+          <p class="card-text mb-2">Happiness: {{ b.happinessCount }}</p>
+          <a class="btn btn-outline-secondary btn-sm" [routerLink]="['/bunnies', b.id]">Open</a>
         </div>
       </div>
+      @if (!bunnies()) {
+        <h3>No bunnies yet. Go ahead and add one!</h3>
+      }
     </div>
-  }
+  </div>
 </div>

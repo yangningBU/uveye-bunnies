@@ -48,17 +48,24 @@ const getLastSnapshotTimestamp = async (db) => {
 const getAllEventsSinceLastSnapshot = async (db) => {
   const snapshotTimestamp = await getLastSnapshotTimestamp(db);
   console.log("Finding all events since timestamp:", snapshotTimestamp);
-  const querySnapshot = db
+  const querySnapshot = await db
     .collection(COLLECTIONS.eventLog)
     .where("timestamp", ">=", snapshotTimestamp)
     .where("eventType", "in", Object.values(EVENTS.bunny))
     .get();
 
+  if (querySnapshot.empty) {
+    console.log("No events founds.");
+    return [];
+  }
+
   const results = querySnapshot.docs.map((event) => ({
     id: event.id,
     ...event.data(),
   }));
-  console.debug("Events found:", results);
+
+  console.log(`${results.length} events found.`);
+  console.debug(results);
   return results;
 };
 
@@ -147,6 +154,9 @@ export function setCorsHeaders(res) {
     "https://uveye-bunnies.web.app";
   res.set("Access-Control-Allow-Origin", frontendUrl);
   res.set("Access-Control-Allow-Headers", "Content-Type");
+  res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS"),
+  // res.set("Access-Control-Allow-Headers (listing permitted request headers),";
+  res.set("Access-Control-Max-Age", "5");
 }
 
 const getConfigRef = async (db) => {

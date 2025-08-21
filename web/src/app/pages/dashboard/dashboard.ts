@@ -9,6 +9,20 @@ import type { BunnyListItem, DashboardResponse } from "../../types";
   selector: 'app-dashboard',
   imports: [CommonModule, RouterLink, FormsModule],
   templateUrl: './dashboard.html',
+  styles: `
+    #loadingContainer {
+      background-color: rgba(255, 255, 255, 0.5);
+      width: 100%;
+      min-height: 100vh;
+      height: 100%;
+      z-index: 10;
+    }
+
+    #loadingBox {
+      left: calc(50vw - 100px);
+      top: calc(50vh - 100px);
+    }
+  `
 })
 export class Dashboard {
   functions = inject(Functions);
@@ -42,7 +56,7 @@ export class Dashboard {
       console.error(err);
       this.error.set((err as string).toString());
     } finally {
-      this.loading.update(() => false);
+      this.loading.set(false);
     }
   }
 
@@ -50,7 +64,7 @@ export class Dashboard {
     if (!this.newBunnyName) return;
 
     this.error.set("");
-    this.loading.update(() => true);
+    this.loading.set(true);
     try {
       await this.#createNewBunny();
     } catch (err) {
@@ -58,7 +72,7 @@ export class Dashboard {
       this.error.set((err as string).toString());
     } finally {
       this.newBunnyName = '';
-      this.loading.update(() => false);
+      this.loading.set(false);
     }
   }
 
@@ -72,12 +86,13 @@ export class Dashboard {
     const name = this.newBunnyName;
     const createBunnyCallable = httpsCallable<{ name: string }, BunnyListItem>(this.functions, 'createBunny');
     const newBunnyResult = await createBunnyCallable({ name });
-    this.bunnies.update(bs => [...bs, newBunnyResult.data]);
+    this.bunnies.update(bs => [newBunnyResult.data, ...bs]);
     const currentTotal = this.totalCount();
     console.log("currentTotal:", currentTotal);
     this.totalCount.update(count => count + 1);
     console.log("newTotal:", this.totalCount());
     this.averageHappiness.update(currentAverage => {
+      console.log("currentAverage:", currentAverage);
       const newAverage = ((currentAverage * currentTotal) + newBunnyResult.data.happinessCount) / this.totalCount();
       console.log("newAverage:", newAverage);
       return newAverage;
