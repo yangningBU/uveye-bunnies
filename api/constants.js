@@ -30,6 +30,19 @@ export const DOC_SINGLETONS = {
   aggregates: "summary",
 };
 
+export const EVENT_FIELDS = {
+  "bunny.created": ["name"],
+  "bunny.carrotsEaten": ["bunnyId"],
+  "bunny.lettuceEaten": ["bunnyId"],
+  "bunny.playDateHad": ["bunnyId", "otherBunnyId"],
+};
+
+export const EVENT_TO_BUNNY_PROPERTY = {
+  "bunny.carrotsEaten": "carrotsEaten",
+  "bunny.lettuceEaten": "lettuceEaten",
+  "bunny.playDateHad": "playDatesHad",
+};
+
 export const EVENTS = {
   bunny: {
     created: "bunny.created",

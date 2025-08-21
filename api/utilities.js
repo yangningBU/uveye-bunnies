@@ -1,4 +1,5 @@
 import { FieldValue } from "firebase-admin/firestore";
+import _ from "lodash";
 import {
   eventTypeToBunnyField,
   COLLECTIONS,
@@ -6,6 +7,7 @@ import {
   DEFAULT_CONFIG,
   DEFAULT_METRICS,
   DOC_SINGLETONS,
+  EVENT_FIELDS,
   EVENTS,
   HAPPINESS_FIELD_MAP,
 } from "./constants.js";
@@ -152,10 +154,10 @@ export function setCorsHeaders(res) {
   const frontendUrl = process.env.FUNCTIONS_EMULATOR ?
     "http://localhost:4200" :
     "https://uveye-bunnies.web.app";
+
   res.set("Access-Control-Allow-Origin", frontendUrl);
   res.set("Access-Control-Allow-Headers", "Content-Type");
   res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS"),
-  // res.set("Access-Control-Allow-Headers (listing permitted request headers),";
   res.set("Access-Control-Max-Age", "5");
 }
 
@@ -195,7 +197,7 @@ export const formatBunnyForDetailsPage = (bunny, config) => {
     lettuceEaten,
     playDatesHad,
     happiness: calculateHappiness(bunny, config),
-  }
+  };
 };
 
 export const getBunnyFromEventId = async (db, eventId) => {
@@ -232,11 +234,12 @@ export const updateAggregates = async (db) => {
   return savedNewAggregate;
 };
 
-export const updateBunny = async (db, bunnyId, eventType) => {
+export const incrementBunnyField = async (db, bunnyId, eventType) => {
   console.log("Updating bunny entity fields...");
 
   const collection = await db.collection(COLLECTIONS.bunnies);
-  const querySnapshot = await collection.doc(bunnyId);
+  const doc = await collection.doc(bunnyId);
+  const querySnapshot = await doc.get();
   if (querySnapshot.empty) {
     throw new Error(`Unable to update non-existent bunny with ID ${bunnyId}.`);
   }
@@ -249,8 +252,8 @@ export const updateBunny = async (db, bunnyId, eventType) => {
     );
   }
 
-  const currentValue = querySnapshot.doc.data()[fieldToUpdate];
-  if (!currentValue && currentValue !== 0) {
+  const currentValue = querySnapshot.data()[fieldToUpdate];
+  if (_.isEmpty(currentValue)) {
     console.error(
       `Current value for field ${fieldToUpdate}(ID: ${bunnyId}) is missing. ` +
       "While I will be supplying a default value to ensure the " +
@@ -259,7 +262,7 @@ export const updateBunny = async (db, bunnyId, eventType) => {
     );
   }
 
-  await querySnapshot.update({
+  await doc.update({
     [fieldToUpdate]: (currentValue ?? 0) + 1,
     updatedAt: FieldValue.serverTimestamp(),
   });
@@ -311,12 +314,12 @@ export const processNewEvent = async (db, event) => {
   }
   case EVENTS.bunny.carrotsEaten:
   case EVENTS.bunny.lettuceEaten:
-    await updateBunny(db, event.bunnyId, event.eventType);
+    await incrementBunnyField(db, event.bunnyId, event.eventType);
     await updateAggregates(db);
     break;
-  case EVENTS.bunny.playDatesHad:
-    await updateBunny(db, event.bunnyId, event.eventType);
-    await updateBunny(db, event.otherBunnyId, event.eventType);
+  case EVENTS.bunny.playDateHad:
+    await incrementBunnyField(db, event.bunnyId, event.eventType);
+    await incrementBunnyField(db, event.otherBunnyId, event.eventType);
     await updateAggregates(db);
     break;
   default:
@@ -330,4 +333,15 @@ export const processNewEvent = async (db, event) => {
   // }
 
   console.log("Processing complete.");
+};
+
+export const validateEventFields = (eventType, requestPayload) => {
+  const requiredFields = EVENT_FIELDS[eventType];
+  return Object
+    .keys(requestPayload)
+    .filter(field => requiredFields.includes(field))
+    .reduce((filtered, field) => {
+      filtered[field] = requestPayload[field];
+      return filtered;
+    }, {});
 };

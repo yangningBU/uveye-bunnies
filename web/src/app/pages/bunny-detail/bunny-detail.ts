@@ -57,6 +57,7 @@ export class BunnyDetail {
     */
     const pathSegments = window.location.pathname.split('/');
     const id = pathSegments[pathSegments.length - 1];
+    this.bunnyId = id;
     await this.reload(id);
   }
 
@@ -91,13 +92,22 @@ export class BunnyDetail {
   async increment(type: 'INC_CARROT_EATEN' | 'INC_LETTUCE_EATEN'): Promise<void> {
     if (!this.bunny()) return;
     try {
-      const res = await fetch('/api/events', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bunny_id: this.bunny()!.id, name: type, count: 1 })
-      });
-      if (!res.ok) throw new Error('Failed to record event');
-      await this.reload(this.bunny()!.id);
+      // FIXME change bunny.carrotsEaten event to bunny.carrotEaten;
+      const eventType = type === 'INC_CARROT_EATEN' ?
+        'bunny.carrotsEaten':
+        'bunny.lettuceEaten';
+      const logEventCallable = httpsCallable<{ eventType: string, bunnyId: string }, { count: number }>(this.functions, 'recordBunnyEvent');
+      const newCountResult = await logEventCallable({ eventType, bunnyId: this.bunnyId });
+      const count = newCountResult?.data?.count;
+      if (!_.isNumber(count)) {
+        throw new Error('Failed to record event');
+      }
+
+      const field = type === 'INC_CARROT_EATEN' ? 'carrotsEaten' : 'lettuceEaten';
+      const current = this.bunny();
+      if (current) {
+        this.bunny.set({ ...current, [field]: count });
+      }
     } catch (err) {
       console.error(err);
     }

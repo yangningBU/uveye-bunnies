@@ -1,10 +1,11 @@
 import { initializeApp, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
-import { onDocumentWritten } from "firebase-functions/v2/firestore";
+// import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import { onRequest } from "firebase-functions/v2/https";
 import { setGlobalOptions } from "firebase-functions/v2";
 
-import onCreateListener from "./listeners/onCreateListener.js";
+// import onCreateListener from "./listeners/onCreateListener.js";
+import bunnyEventHandler from "./endpoints/bunnyEventHandler.js";
 import createBunnyHandler from "./endpoints/createBunnyHandler.js";
 import getBunnyHandler from "./endpoints/getBunnyHandler.js";
 import getDashboardHandler from "./endpoints/getDashboardHandler.js";
@@ -34,14 +35,19 @@ export const dashboard = onRequest((req, res) => {
 export const getBunny = onRequest((req, res) => {
   setCorsHeaders(res);
   getBunnyHandler(db, req, res);
-})
+});
+
+export const recordBunnyEvent = onRequest((req, res) => {
+  setCorsHeaders(res);
+  bunnyEventHandler(db, req, res);
+});
 
 export const createBunny = onRequest((req, res) => {
   setCorsHeaders(res);
   createBunnyHandler(db, req, res);
 });
 
-export const onCreateTrigger = onDocumentWritten(
-  "events/{eventId}",
-  (event) => onCreateListener(db, event),
-);
+// export const onCreateTrigger = onDocumentWritten(
+//   "events/{eventId}",
+//   (event) => onCreateListener(db, event),
+// );

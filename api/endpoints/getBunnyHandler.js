@@ -6,8 +6,8 @@ const getBunny = async (db, bunnyId) => {
   const querySnapshot = await db
     .collection(COLLECTIONS.bunnies)
     .doc(bunnyId)
-    .get()
-  
+    .get();
+
   if (!querySnapshot.exists) {
     return;
   }
