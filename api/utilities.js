@@ -88,7 +88,7 @@ const getAllEventsSinceLastSnapshot = async (db) => {
   };
 };
 
-const calculateHappiness = (bunnyDoc, config) => {
+export const calculateHappiness = (bunnyDoc, config) => {
   const result = Object
     .entries(HAPPINESS_FIELD_MAP)
     .map(([bunnyField, configField]) => {

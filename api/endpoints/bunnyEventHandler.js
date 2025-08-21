@@ -6,8 +6,10 @@ import {
   REQUIRED_EVENT_FIELDS,
 } from "../constants.js";
 import {
+  calculateHappiness,
   getBunnyById,
   getBunnyFieldValue,
+  getConfig,
   triggerUpdateToState,
   validateEventFields,
 } from "../utilities.js";
@@ -20,7 +22,11 @@ const getReturnObjectForLoggedEvent = async (db, newEvent) => {
   case EVENTS.bunny.lettuceEaten: {
     const updatedRecord = await getBunnyById(db, newEvent.bunnyId);
     const value = getBunnyFieldValue(newEvent.eventType, updatedRecord);
-    out = { count: value };
+    const config = await getConfig(db);
+    out = {
+      count: value,
+      happiness: calculateHappiness(updatedRecord, config),
+    };
     break;
   }
   default:

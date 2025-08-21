@@ -96,17 +96,18 @@ export class BunnyDetail {
       const eventType = type === 'INC_CARROT_EATEN' ?
         'bunny.carrotsEaten':
         'bunny.lettuceEaten';
-      const logEventCallable = httpsCallable<{ eventType: string, bunnyId: string }, { count: number }>(this.functions, 'recordBunnyEvent');
-      const newCountResult = await logEventCallable({ eventType, bunnyId: this.bunnyId });
-      const count = newCountResult?.data?.count;
-      if (!_.isNumber(count)) {
-        throw new Error('Failed to record event');
+      const logEventCallable = httpsCallable<{ eventType: string, bunnyId: string }, { count: number, happiness: number }>(this.functions, 'recordBunnyEvent');
+      const updatedResult = await logEventCallable({ eventType, bunnyId: this.bunnyId });
+      const count = updatedResult.data.count;
+      const newHappiness = updatedResult.data.happiness;
+      if (!_.isNumber(count) || !_.isNumber(newHappiness)) {
+        throw new Error('Failed to record event.');
       }
 
       const field = type === 'INC_CARROT_EATEN' ? 'carrotsEaten' : 'lettuceEaten';
       const current = this.bunny();
       if (current) {
-        this.bunny.set({ ...current, [field]: count });
+        this.bunny.set({ ...current, [field]: count, happiness: newHappiness });
       }
     } catch (err) {
       console.error(err);
