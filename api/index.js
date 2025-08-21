@@ -6,6 +6,7 @@ import { setGlobalOptions } from "firebase-functions/v2";
 
 import onCreateListener from "./listeners/onCreateListener.js";
 import createBunnyHandler from "./endpoints/createBunnyHandler.js";
+import getBunnyHandler from "./endpoints/getBunnyHandler.js";
 import getDashboardHandler from "./endpoints/getDashboardHandler.js";
 import serviceAccount from "./credentials.json" with { type: "json" };
 import { setCorsHeaders } from "./utilities.js";
@@ -29,6 +30,11 @@ export const dashboard = onRequest((req, res) => {
   setCorsHeaders(res);
   getDashboardHandler(db, req, res);
 });
+
+export const getBunny = onRequest((req, res) => {
+  setCorsHeaders(res);
+  getBunnyHandler(db, req, res);
+})
 
 export const createBunny = onRequest((req, res) => {
   setCorsHeaders(res);

@@ -22,11 +22,13 @@ const logCreateBunny = async (db, request, response) => {
   try {
     const name = request?.body?.data?.name;
     if (!name) {
-      throw new Error("Missing valid data.name field in request body.");
+      const msg = "Missing valid data.name field in request body.";
+      response
+        .status(400)
+        .json({ error: msg });
+      return;
     }
 
-    // Consider: what happens if the same bunny
-    // is created more than once?
     const newBunnyEvent = await createBunnyCreatedEvent(db, name);
     console.log("New bunny event created: ", newBunnyEvent);
 

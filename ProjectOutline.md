@@ -26,14 +26,14 @@ This project will be built in several stages.
 - the specific bunny page at `/bunnies/:id` should:
   - display all of the bunny properties:
     - name
-    - number of carrots_eaten
-    - number of lettuce_leaves_eaten
+    - number of carrotsEaten
+    - number of lettuceEaten
       - happiness equal to the sum of each activity times its associated points:
-        - lettuce_leaves_eaten * EATING_LETTUCE_POINTS
-        - carrots_eaten * EATING_CARROT_POINTS
-        - play_dates_had * PLAY_DATE_POINTS
-  - have a button to increment carrots_eaten; this should record an increment or set event and trigger state re-calculation
-  - have a button to increment lettuce_leaves_eaten ; this should record an increment or set event and trigger state re-calculation
+        - lettuceEaten * EATING_LETTUCE_POINTS
+        - carrotsEaten * EATING_CARROT_POINTS
+        - playDatesHad * PLAY_DATE_POINTS
+  - have a button to increment carrotsEaten; this should record an increment or set event and trigger state re-calculation
+  - have a button to increment lettuceEaten ; this should record an increment or set event and trigger state re-calculation
   - have a selector for recording a play date
     - there should be a dropdown containing the names of every bunny besides the current one being displayed
     - a button to record play date assuming bunny was selected; this button should be disabled if a bunny wasn't selected from the dropdown

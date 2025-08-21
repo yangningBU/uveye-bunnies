@@ -1,16 +1,18 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, ParamMap, RouterLink } from '@angular/router';
+import {
+  // ActivatedRoute,
+  // ParamMap,
+  RouterLink,
+} from '@angular/router';
 import { FormsModule } from '@angular/forms';
-
-interface BunnyDetailModel {
-  id: string;
-  name: string;
-  carrots_eaten: number;
-  lettuce_eaten: number;
-  play_dates_had: number;
-  happiness: number;
-}
+import { Functions, httpsCallable } from '@angular/fire/functions';
+import _ from 'lodash';
+import type {
+  BunnyDetailModel,
+  BunnyListItem,
+  DashboardResponse
+} from "../../types";
 
 @Component({
   selector: 'app-bunny-detail',
@@ -18,33 +20,71 @@ interface BunnyDetailModel {
   templateUrl: './bunny-detail.html',
 })
 export class BunnyDetail {
-  private route = new ActivatedRoute();
+  // private route = new ActivatedRoute();
 
+  bunnyId = '';
   bunny = signal<BunnyDetailModel | null>(null);
   otherBunnies = signal<{ id: string; name: string }[]>([]);
+  loading = signal(true);
   selectedFriendId: string = '';
 
+  functions = inject(Functions);
+
   async ngOnInit(): Promise<void> {
+    /* This keeps throwing the following error on page load even
+    though the redirect from the dashboard page suceeds:
+
     this.route.paramMap.subscribe(async (params: ParamMap) => {
       const id = params.get('id');
       if (id) {
+        this.bunnyId = id;
         await this.reload(id);
       }
     })
+
+    app.routes.ts:5 ERROR TypeError: Cannot read properties of undefined (reading 'pipe')
+    at get paramMap (router2.mjs:2272:36)
+    at _BunnyDetail.<anonymous> (bunny-detail.ts:29:16)
+    at Generator.next (<anonymous>)
+    at chunk-C4KO2HLL.js:18:61
+    at new ZoneAwarePromise (zone.js:2701:25)
+    at __async (chunk-C4KO2HLL.js:2:10)
+    at _BunnyDetail.ngOnInit (bunny-detail.ts:27:17)
+
+    So I'm ignoring the normal routing strategy and using vanilla JS
+    for now until I can figure out why the ActivatedRoute isn't being
+    initialized properly.
+    */
+    const pathSegments = window.location.pathname.split('/');
+    const id = pathSegments[pathSegments.length - 1];
+    await this.reload(id);
   }
 
   private async reload(id: string): Promise<void> {
+    this.loading.set(true);
     try {
-      const res = await fetch(`/api/bunnies/${id}`);
-      if (!res.ok) throw new Error('Failed to load');
-      const data = await res.json();
-      this.bunny.set(data);
+      const getBunny = httpsCallable<unknown, BunnyDetailModel>(this.functions, 'getBunny');
+      const bunnyResponse = await getBunny({id});
+      const bunnyData = bunnyResponse.data;
+      if (_.isEmpty(bunnyData)) {
+        throw new Error(`Failed to load bunny: ${bunnyResponse}`);
+      }
 
-      const res2 = await fetch('/api/dashboard');
-      const data2 = await res2.json();
-      this.otherBunnies.set(data2.bunnies.filter((b: any) => b.id !== id));
+      this.bunny.set(bunnyData);
+
+      const getDashboard = httpsCallable<unknown, DashboardResponse>(this.functions, 'dashboard');
+      const dashboardResponse = await getDashboard();
+      const dashboardData = dashboardResponse.data;
+      if (_.isEmpty(dashboardData)) {
+        throw new Error(`Error retrieving dashboard contents: ${dashboardResponse}`);
+      }
+
+      this.otherBunnies.set(dashboardData.bunnies.filter((b: BunnyListItem) => b.id !== id));
     } catch (err) {
       console.error(err);
+      // FIXME: setError here
+    } finally {
+      this.loading.set(false);
     }
   }
 

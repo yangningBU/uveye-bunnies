@@ -186,6 +186,18 @@ export const formatBunnyForDashboard = (bunny, config) => ({
   happinessCount: calculateHappiness(bunny, config),
 });
 
+export const formatBunnyForDetailsPage = (bunny, config) => {
+  const { id, name, carrotsEaten, lettuceEaten, playDatesHad } = bunny;
+  return {
+    id,
+    name,
+    carrotsEaten,
+    lettuceEaten,
+    playDatesHad,
+    happiness: calculateHappiness(bunny, config),
+  }
+};
+
 export const getBunnyFromEventId = async (db, eventId) => {
   const querySnapshot = await db
     .collection(COLLECTIONS.bunnies)
@@ -284,6 +296,8 @@ export const processNewEvent = async (db, event) => {
     throw new Error("Unable to process missing event.");
   }
 
+  // FIXME: Refactor so that resulting entity states is also a product
+  // of iterating over events like in updateAggregates / calculateAggregates
   switch (event.eventType) {
   case EVENTS.bunny.created: {
     const newBunny = {

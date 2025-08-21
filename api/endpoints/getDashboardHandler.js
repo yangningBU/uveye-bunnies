@@ -1,4 +1,3 @@
-import * as logger from "firebase-functions/logger";
 import { COLLECTIONS, DEFAULT_METRICS, DOC_SINGLETONS } from "../constants.js";
 import {
   formatBunnyForDashboard,
@@ -40,17 +39,19 @@ const dashboardFunction = async (db, request, response) => {
     const config = await getConfig(db);
     const { bunnyCount, totalHappiness } = metrics;
 
+    /* FIXME: bunnies should be paginated but bunniesCount
+    and happinessAverages should be calculated from the
+    entire dataset, not just the paginated subset
+    */
     response.json({
       data: {
-        // FIXME: bunnies should be paginated
         bunnies: formatBunnies(bunnies, config),
-        // FIXME: metrics should be from all results, not just paginated
         bunniesCount: metrics.bunnyCount,
         happinessAverage: safeHappinessAverage(totalHappiness, bunnyCount),
       },
     });
   } catch (error) {
-    logger.error("Error handling request", error);
+    console.error("Error handling request", error);
     response
       .status(500)
       .json({ error: "Internal server error collecting bunny data." });

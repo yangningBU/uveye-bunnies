@@ -1,3 +1,12 @@
+interface BunnyDetailModel {
+  id: string;
+  name: string;
+  carrotsEaten: number;
+  lettuceEaten: number;
+  playDatesHad: number;
+  happiness: number;
+}
+
 interface BunnyListItem {
   id: string;
   name: string;
@@ -10,4 +19,4 @@ interface DashboardResponse {
   happinessAverage: number;
 }
 
-export type { BunnyListItem, DashboardResponse };
+export type { BunnyDetailModel, BunnyListItem, DashboardResponse };
