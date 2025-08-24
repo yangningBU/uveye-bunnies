@@ -1,4 +1,4 @@
-@if (loading()) {
+@if (pageLoading()) {
   <div class="spinner-border position-absolute" role="status" id="spinner">
     <span class="visually-hidden">Loading...</span>
   </div>
@@ -19,7 +19,15 @@
           <div class="text-muted mb-1">Carrots eaten</div>
           <div class="d-flex align-items-center gap-2">
             <span class="fs-5">{{ b.carrotsEaten }}</span>
-            <button class="btn btn-sm btn-primary" (click)="increment('INC_CARROT_EATEN')">+1</button>
+            <button class="btn btn-sm btn-primary increment-button" (click)="increment('INC_CARROT_EATEN')" [disabled]="carrotsLoading()">
+              @if (carrotsLoading()) {
+                <div class="spinner-border spinner-border-sm" role="status" id="spinner">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+              } @else {
+                +1
+              }
+            </button>
           </div>
         </div>
       </div>
@@ -28,7 +36,15 @@
           <div class="text-muted mb-1">Lettuce eaten</div>
           <div class="d-flex align-items-center gap-2">
             <span class="fs-5">{{ b.lettuceEaten }}</span>
-            <button class="btn btn-sm btn-primary" (click)="increment('INC_LETTUCE_EATEN')">+1</button>
+            <button class="btn btn-sm btn-primary increment-button" (click)="increment('INC_LETTUCE_EATEN')" [disabled]="lettuceLoading()">
+              @if (lettuceLoading()) {
+                <div class="spinner-border spinner-border-sm" role="status" id="spinner">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+              } @else {
+                +1
+              }
+            </button>
           </div>
         </div>
       </div>

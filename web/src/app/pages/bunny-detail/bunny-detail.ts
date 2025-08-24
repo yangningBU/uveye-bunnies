@@ -21,6 +21,13 @@ import type {
   selector: 'app-bunny-detail',
   imports: [CommonModule, RouterLink, FormsModule],
   templateUrl: './bunny-detail.html',
+  styles: `
+    .increment-button {
+      height: 30px;
+      width: 30px;
+      padding: 0;
+    }
+  `
 })
 export class BunnyDetail {
   // private route = new ActivatedRoute();
@@ -28,7 +35,9 @@ export class BunnyDetail {
   bunnyId = '';
   bunny = signal<BunnyDetailModel | null>(null);
   otherBunnies = signal<{ id: string; name: string }[]>([]);
-  loading = signal(true);
+  pageLoading = signal(true);
+  carrotsLoading = signal(false);
+  lettuceLoading = signal(false);
   selectedFriendId: string = '';
 
   functions = inject(Functions);
@@ -65,7 +74,7 @@ export class BunnyDetail {
   }
 
   private async reload(id: string): Promise<void> {
-    this.loading.set(true);
+    this.pageLoading.set(true);
     try {
       const getBunny = httpsCallable<{id: string}, BunnyDetailModel>(this.functions, 'getBunny');
       const bunnyResponse = await getBunny({id});
@@ -88,12 +97,19 @@ export class BunnyDetail {
       console.error(err);
       // FIXME: setError here
     } finally {
-      this.loading.set(false);
+      this.pageLoading.set(false);
     }
   }
 
   async increment(type: 'INC_CARROT_EATEN' | 'INC_LETTUCE_EATEN'): Promise<void> {
     if (!this.bunny()) return;
+
+    if (type === 'INC_CARROT_EATEN') {
+      this.carrotsLoading.set(true);
+    } else {
+      this.lettuceLoading.set(true);
+    }
+
     try {
       const eventType = type === 'INC_CARROT_EATEN' ?
         'bunny.carrotsEaten':
@@ -102,6 +118,7 @@ export class BunnyDetail {
       const updatedResult = await logEventCallable({ eventType, bunnyId: this.bunnyId });
       const count = updatedResult.data.count;
       const newHappiness = updatedResult.data.happiness;
+
       if (!_.isNumber(count) || !_.isNumber(newHappiness)) {
         throw new Error('Failed to record event.');
       }
@@ -113,6 +130,12 @@ export class BunnyDetail {
       }
     } catch (err) {
       console.error(err);
+    } finally {
+      if (type === 'INC_CARROT_EATEN') {
+        this.carrotsLoading.set(false);
+      } else {
+        this.lettuceLoading.set(false);
+      }
     }
   }
 
