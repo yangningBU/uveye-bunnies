@@ -205,7 +205,7 @@ describe("utilities", () => {
       const dbMatch = snapshot1.entities.find((b) => b.id === bunnyId);
       if (dbMatch) {
         return {
-          bunny: { ...dbMatch }, // Clone to avoid mutations
+          bunny: { ...dbMatch },
           alreadyInList: false,
         };
       }

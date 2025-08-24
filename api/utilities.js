@@ -126,7 +126,7 @@ const findBunnyInListOrDB = async (db, list, bunnyId) => {
   const dbMatch = await getBunnyById(db, bunnyId);
   if (dbMatch) {
     return {
-      bunny: dbMatch,
+      bunny: { ...dbMatch },
       alreadyInList: false,
     };
   }
@@ -146,7 +146,7 @@ const handleBunnyCreatedEvent = async (
 ) => {
   const { bunny, alreadyInList } = await findBunny(entities, event.id);
   if (bunny) {
-    console.log("Event bunny.created fired for exising bunny. Skipping.");
+    console.log("Event bunny.created fired for exising bunny. Tracking.");
     if (!alreadyInList) {
       entities.push(bunny);
     }
@@ -157,10 +157,11 @@ const handleBunnyCreatedEvent = async (
       name: event.name,
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
+      lastEventAppliedTimestamp: event.timestamp,
     };
     entities.push(newBunny);
-    aggregates.bunnyCount += 1;
   }
+  aggregates.bunnyCount += 1;
 };
 
 const handleCarrotsEatenEvent = async (
@@ -173,9 +174,9 @@ const handleCarrotsEatenEvent = async (
     entities,
     event.bunnyId,
   );
-  if (bunny) {
+  if (bunny && bunny.lastEventAppliedTimestamp < event.timestamp) {
     bunny.carrotsEaten += 1;
-    aggregates.totalCarrotsEaten += 1;
+    bunny.lastEventAppliedTimestamp = event.timestamp;
     if (!alreadyInList) {
       entities.push(bunny);
     }
@@ -185,6 +186,7 @@ const handleCarrotsEatenEvent = async (
       `created yet (bunny ID ${event.bunnyId}). Skipping.`,
     );
   }
+  aggregates.totalCarrotsEaten += 1;
 };
 
 const handleLettuceEatenEvent = async (
@@ -197,9 +199,9 @@ const handleLettuceEatenEvent = async (
     entities,
     event.bunnyId,
   );
-  if (bunny) {
+  if (bunny && bunny.lastEventAppliedTimestamp < event.timestamp) {
     bunny.lettuceEaten += 1;
-    aggregates.totalLettuceEaten += 1;
+    bunny.lastEventAppliedTimestamp = event.timestamp;
     if (!alreadyInList) {
       entities.push(bunny);
     }
@@ -209,6 +211,7 @@ const handleLettuceEatenEvent = async (
       `created yet (bunny ID ${event.bunnyId}). Skipping.`,
     );
   }
+  aggregates.totalLettuceEaten += 1;
 };
 
 const handlePlayDateEvent = async (
@@ -226,10 +229,16 @@ const handlePlayDateEvent = async (
     event.otherBunnyId,
   );
 
-  if (firstBunny && secondBunny) {
+  if (
+    firstBunny &&
+    secondBunny &&
+    firstBunny.lastEventAppliedTimestamp < event.timestamp &&
+    secondBunny.lastEventAppliedTimestamp < event.timestamp
+  ) {
     firstBunny.playDatesHad += 1;
     secondBunny.playDatesHad += 1;
-    aggregates.totalPlayDatesHad += 1;
+    firstBunny.lastEventAppliedTimestamp = event.timestamp;
+    secondBunny.lastEventAppliedTimestamp = event.timestamp;
     if (!alreadyInList1) {
       entities.push(firstBunny);
     }
@@ -239,9 +248,11 @@ const handlePlayDateEvent = async (
   } else {
     console.warn(
       "Attempting to record playdate with bunny that hasn't been " +
-      `created yet (IDS ${event.bunnyId}, ${event.otherBunnyId}). Skipping.`,
+      `created yet (IDS ${event.bunnyId}, ${event.otherBunnyId}). Or already `,
+      "applied this event.",
     );
   }
+  aggregates.totalPlayDatesHad += 1;
 };
 
 export const calculateAggregatesAndEntities = async (
@@ -252,7 +263,7 @@ export const calculateAggregatesAndEntities = async (
   const entities = [];
   const aggregates = Object.assign({}, DEFAULT_METRICS, lastSnapshot);
   console.log("Starting with an agggregate snapshot like so:", aggregates);
-  console.log(`Processing ${events.length} length.`);
+  console.log(`Processing ${events.length} events.`);
 
   for (const event of events) {
     switch (event.eventType) {
@@ -359,28 +370,38 @@ export const getBunnyById = async (db, bunnyId) => {
   };
 };
 
-export const applyNewState = async (db, newState) => {
-  console.log("Updating aggregate metrics...");
-  console.debug("New metrics will be:", newState.aggregates);
-  const collection = await db.collection(COLLECTIONS.aggregates);
-  // FIXME: what if this fails?
-  await collection.doc(DOC_SINGLETONS.aggregates).set({
-    ...newState.aggregates,
-    updatedAt: FieldValue.serverTimestamp(),
-  });
-  const aggregateSnapshot = await collection
-    .doc(DOC_SINGLETONS.aggregates)
-    .get();
-  const savedNewAggregate = aggregateSnapshot.data();
-  console.log("Aggregates saved as:", savedNewAggregate);
-
+const batchCommitEntities = async (db, entities) => {
   const batch = db.batch();
-  newState.entities.forEach((entity) => {
+  entities.forEach((entity) => {
     const doc = db.collection(COLLECTIONS.bunnies).doc(entity.id);
     batch.set(doc, entity);
   });
 
   await batch.commit();
+};
+
+const setAggregateSummary = async (db, aggregates) => {
+  const collection = await db.collection(COLLECTIONS.aggregates);
+  // FIXME: what if this fails? - it'll mean the dashboard
+  // will show stale data until this method succeeds
+  await collection.doc(DOC_SINGLETONS.aggregates).set({
+    ...aggregates,
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+  const aggregateSnapshot = await collection
+    .doc(DOC_SINGLETONS.aggregates)
+    .get();
+  return aggregateSnapshot.data();
+};
+
+export const applyNewState = async (db, newState) => {
+  console.log("Updating aggregate metrics...");
+  console.debug("New metrics will be:", newState.aggregates);
+  const savedAggregates = await setAggregateSummary(db, newState.aggregates);
+  console.log("Aggregates saved as:", savedAggregates);
+
+  console.log(`Upserting ${newState.entities.length} entities...`);
+  await batchCommitEntities(db, newState.entities);
 };
 
 export const incrementBunnyField = async (db, bunnyId, eventType) => {
@@ -456,9 +477,13 @@ export const triggerUpdateToState = async (db) => {
   );
 
   const newState = {
-    ...partialNewState.aggregates,
-    ...calculateDownstreamMetrics(partialNewState.aggregates, config),
+    aggregates: {
+      ...partialNewState.aggregates,
+      ...calculateDownstreamMetrics(partialNewState.aggregates, config),
+    },
+    entities: partialNewState.entities,
   };
+
   await applyNewState(db, newState);
 
   // TODO: implement this:

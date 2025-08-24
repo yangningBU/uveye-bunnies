@@ -1,3 +1,4 @@
+import { COLLECTIONS } from "../constants.js";
 import { triggerUpdateToState } from "../utilities.js";
 
 const onCreateListener = async (db, fireBaseEvent) => {
@@ -17,7 +18,7 @@ const onCreateListener = async (db, fireBaseEvent) => {
       "The onCreateListener has no associated data. " +
       `Falling back to direct querying by provided ID ${eventId}.`,
     );
-    event = await db.collection("events").get(eventId);
+    event = await db.collection(COLLECTIONS.eventLog).get(eventId);
   }
   console.log("Resulting event is ", event);
 
