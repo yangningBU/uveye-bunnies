@@ -40,6 +40,7 @@ export default [
           avoidEscape: true,
         },
       ],
+      "max-len": ["error", 100],
       "object-curly-spacing": ["error", "always"],
       "require-jsdoc": 0,
     },

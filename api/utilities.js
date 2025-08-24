@@ -2,13 +2,14 @@ import { FieldValue } from "firebase-admin/firestore";
 import _ from "lodash";
 import {
   eventTypeToBunnyField,
+  AGGREGATE_HAPPINESSS_FIELD_MAP,
   COLLECTIONS,
   DEFAULT_BUNNY,
   DEFAULT_CONFIG,
   DEFAULT_METRICS,
   DOC_SINGLETONS,
   EVENTS,
-  HAPPINESS_CONFIG_FIELD_MAP,
+  HAPPINESS_BUNNY_FIELD_CONFIG_MAP,
   REQUIRED_EVENT_FIELDS,
 } from "./constants.js";
 
@@ -90,21 +91,10 @@ const getAllEventsSinceLastSnapshot = async (db) => {
 
 export const calculateHappiness = (bunnyDoc, config) => {
   const result = Object
-    .entries(HAPPINESS_CONFIG_FIELD_MAP)
+    .entries(HAPPINESS_BUNNY_FIELD_CONFIG_MAP)
     .map(([bunnyField, configField]) => {
-      let propertyCount = bunnyDoc[bunnyField];
-      let weight = config[configField];
-
-      if (propertyCount == null) {
-        console.warn(`Property ${bunnyField} is unset. Using default value.`);
-        propertyCount = DEFAULT_BUNNY[bunnyField];
-      }
-
-      if (weight == null) {
-        console.warn(`Config ${configField} is unset. Using default weight.`);
-        weight = DEFAULT_CONFIG[configField];
-      }
-
+      const propertyCount = bunnyDoc[bunnyField];
+      const weight = config[configField];
       return propertyCount * weight;
     })
     .reduce((sum, points) => sum + points, 0);
@@ -112,102 +102,178 @@ export const calculateHappiness = (bunnyDoc, config) => {
 };
 
 const calculateDownstreamMetrics = (metrics, config = DEFAULT_CONFIG) => {
+  const totalHappiness = Object
+    .entries(AGGREGATE_HAPPINESSS_FIELD_MAP.totalHappiness)
+    .map(([metric, configField]) => metrics[metric] * config[configField])
+    .reduce((sum, points) => sum + points, 0);
+
   const dependentMetrics = {
-    totalHappiness: [
-      metrics.totalCarrotsEaten * config.pointsCarrotsEaten,
-      metrics.totalLettuceEaten * config.pointsLettuceEaten,
-      metrics.totalPlayDatesHad * config.pointsPlayDatesHad,
-    ].reduce((sum, points) => sum + points, 0),
+    totalHappiness,
   };
   console.debug("Dependent metrics:", dependentMetrics);
   return dependentMetrics;
 };
 
-const findBunnyInListOrDB = (list, db, bunnyId) => {
+const findBunnyInListOrDB = async (db, list, bunnyId) => {
   const listMatch = list.find((b) => b.id === bunnyId);
-  if (listMatch) return listMatch;
+  if (listMatch) {
+    return {
+      bunny: listMatch,
+      alreadyInList: true,
+    };
+  }
 
-  const dbMatch = getBunnyById(db, bunnyId);
-  if (dbMatch) return dbMatch;
+  const dbMatch = await getBunnyById(db, bunnyId);
+  if (dbMatch) {
+    return {
+      bunny: dbMatch,
+      alreadyInList: false,
+    };
+  }
 
   console.debug(`Unable to find bunny by ID ${bunnyId} in list or DB.`);
+  return {
+    bunny: null,
+    alreadyInList: false,
+  };
 };
 
-const calculateAggregatesAndEntities = async (db, lastSnapshot, events) => {
-  const config = await getConfig(db);
+const handleBunnyCreatedEvent = async (
+  event,
+  entities,
+  aggregates,
+  findBunny,
+) => {
+  const { bunny, alreadyInList } = await findBunny(entities, event.id);
+  if (bunny) {
+    console.log("Event bunny.created fired for exising bunny. Skipping.");
+    if (!alreadyInList) {
+      entities.push(bunny);
+    }
+  } else {
+    const newBunny = {
+      ...DEFAULT_BUNNY,
+      id: event.id,
+      name: event.name,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+    entities.push(newBunny);
+    aggregates.bunnyCount += 1;
+  }
+};
 
+const handleCarrotsEatenEvent = async (
+  event,
+  entities,
+  aggregates,
+  findBunny,
+) => {
+  const { bunny, alreadyInList } = await findBunny(
+    entities,
+    event.bunnyId,
+  );
+  if (bunny) {
+    bunny.carrotsEaten += 1;
+    aggregates.totalCarrotsEaten += 1;
+    if (!alreadyInList) {
+      entities.push(bunny);
+    }
+  } else {
+    console.warn(
+      "Attempting to increment carrot count on bunny that hasn't been " +
+      `created yet (bunny ID ${event.bunnyId}). Skipping.`,
+    );
+  }
+};
+
+const handleLettuceEatenEvent = async (
+  event,
+  entities,
+  aggregates,
+  findBunny,
+) => {
+  const { bunny, alreadyInList } = await findBunny(
+    entities,
+    event.bunnyId,
+  );
+  if (bunny) {
+    bunny.lettuceEaten += 1;
+    aggregates.totalLettuceEaten += 1;
+    if (!alreadyInList) {
+      entities.push(bunny);
+    }
+  } else {
+    console.warn(
+      "Attempting to increment lettuce count on bunny that hasn't been " +
+      `created yet (bunny ID ${event.bunnyId}). Skipping.`,
+    );
+  }
+};
+
+const handlePlayDateEvent = async (
+  event,
+  entities,
+  aggregates,
+  findBunny,
+) => {
+  const { bunny: firstBunny, alreadyInList: alreadyInList1 } = await findBunny(
+    entities,
+    event.bunnyId,
+  );
+  const { bunny: secondBunny, alreadyInList: alreadyInList2 } = await findBunny(
+    entities,
+    event.otherBunnyId,
+  );
+
+  if (firstBunny && secondBunny) {
+    firstBunny.playDatesHad += 1;
+    secondBunny.playDatesHad += 1;
+    aggregates.totalPlayDatesHad += 1;
+    if (!alreadyInList1) {
+      entities.push(firstBunny);
+    }
+    if (!alreadyInList2) {
+      entities.push(secondBunny);
+    }
+  } else {
+    console.warn(
+      "Attempting to record playdate with bunny that hasn't been " +
+      `created yet (IDS ${event.bunnyId}, ${event.otherBunnyId}). Skipping.`,
+    );
+  }
+};
+
+export const calculateAggregatesAndEntities = async (
+  lastSnapshot,
+  events,
+  findBunny,
+) => {
   const entities = [];
-  const aggregateCollector = { ...lastSnapshot };
+  const aggregates = Object.assign({}, DEFAULT_METRICS, lastSnapshot);
+  console.log("Starting with an agggregate snapshot like so:", aggregates);
+  console.log(`Processing ${events.length} length.`);
 
-  events.forEach((e) => {
-    switch (e.eventType) {
-    case EVENTS.bunny.created: {
-      const newBunny = {
-        ...DEFAULT_BUNNY,
-        id: e.id,
-        name: e.name,
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
-      };
-      entities.push(newBunny);
-      aggregateCollector.bunnyCount += 1;
+  for (const event of events) {
+    switch (event.eventType) {
+    case EVENTS.bunny.created:
+      await handleBunnyCreatedEvent(event, entities, aggregates, findBunny);
+      break;
+    case EVENTS.bunny.carrotsEaten:
+      await handleCarrotsEatenEvent(event, entities, aggregates, findBunny);
+      break;
+    case EVENTS.bunny.lettuceEaten:
+      await handleLettuceEatenEvent(event, entities, aggregates, findBunny);
+      break;
+    case EVENTS.bunny.playDateHad:
+      await handlePlayDateEvent(event, entities, aggregates, findBunny);
       break;
     }
-    case EVENTS.bunny.carrotsEaten: {
-      const matchingBunny = findBunnyInListOrDB(entities, db, e.bunnyId);
-      if (matchingBunny) {
-        matchingBunny.carrotsEaten += 1;
-        aggregateCollector.totalCarrotsEaten += 1;
-        entities.push(matchingBunny);
-      } else {
-        console.warn(
-          "Attempting to increment carrot count on bunny that hasn't been " +
-          "created yet. Skipping.",
-        );
-      }
-      break;
-    }
-    case EVENTS.bunny.lettuceEaten: {
-      const matchingBunny = findBunnyInListOrDB(entities, db, e.bunnyId);
-      if (matchingBunny) {
-        matchingBunny.lettuceEaten += 1;
-        aggregateCollector.totalLettuceEaten += 1;
-        entities.push(matchingBunny);
-      } else {
-        console.warn(
-          "Attempting to increment lettuce count on bunny that hasn't been " +
-          "created yet. Skipping.",
-        );
-      }
-      break;
-    }
-    case EVENTS.bunny.playDateHad: {
-      const matchingBunny = findBunnyInListOrDB(entities, db, e.bunnyId);
-      const otherBunny = findBunnyInListOrDB(entities, db, e.otherBunnyId);
-      if (matchingBunny && otherBunny) {
-        matchingBunny.playDatesHad += 1;
-        otherBunny.playDatesHad += 1;
-        aggregateCollector.totalPlayDatesHad += 1;
-        entities.push(matchingBunny);
-      } else {
-        console.warn(
-          "Attempting to record playdate with bunny that hasn't been " +
-          "created yet. Skipping.",
-        );
-      }
-      break;
-    }
-    }
-  });
+  }
 
-  const aggregates = {
-    ...aggregateCollector,
-    ...calculateDownstreamMetrics(aggregateCollector, config),
-  };
-  console.log("Calculated total metrics:", aggregates);
+  console.log("Calculated aggregate:", aggregates);
   console.log(`There are ${entities.length} entities to upsert.`);
-
-  return { aggregates, entities };
+  return { aggregates: aggregates, entities };
 };
 
 export const safeHappinessAverage = (totalHappiness, bunnyCount) => {
@@ -379,9 +445,20 @@ export const recordBunny = async (db, bunny) => {
 
 export const triggerUpdateToState = async (db) => {
   console.log("Triggering downstream processing following event...");
+  const config = await getConfig(db);
 
-  const newState = await calculateAggregatesAndEntities(db);
+  const { lastSnapshot, events } = await getAllEventsSinceLastSnapshot(db);
+  const findBunny = (list, bunnyId) => findBunnyInListOrDB(db, list, bunnyId);
+  const partialNewState = await calculateAggregatesAndEntities(
+    lastSnapshot,
+    events,
+    findBunny,
+  );
 
+  const newState = {
+    ...partialNewState.aggregates,
+    ...calculateDownstreamMetrics(partialNewState.aggregates, config),
+  };
   await applyNewState(db, newState);
 
   // TODO: implement this:

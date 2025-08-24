@@ -1,3 +1,11 @@
+export const AGGREGATE_HAPPINESSS_FIELD_MAP = {
+  totalHappiness: {
+    totalCarrotsEaten: "pointsCarrotsEaten",
+    totalLettuceEaten: "pointsLettuceEaten",
+    totalPlayDatesHad: "pointsPlayDatesHad",
+  },
+};
+
 export const COLLECTIONS = {
   config: "config",
   eventLog: "events",
@@ -6,9 +14,9 @@ export const COLLECTIONS = {
 };
 
 export const DEFAULT_BUNNY = {
-  carrotsEaten: 1,
-  lettuceEaten: 1,
-  playDatesHad: 1,
+  carrotsEaten: 0,
+  lettuceEaten: 0,
+  playDatesHad: 0,
 };
 
 export const DEFAULT_CONFIG = {
@@ -51,7 +59,7 @@ export const EVENTS = {
   snapshot: "meta.snapshot",
 };
 
-export const HAPPINESS_CONFIG_FIELD_MAP = {
+export const HAPPINESS_BUNNY_FIELD_CONFIG_MAP = {
   carrotsEaten: "pointsCarrotsEaten",
   lettuceEaten: "pointsLettuceEaten",
   playDatesHad: "pointsPlayDatesHad",

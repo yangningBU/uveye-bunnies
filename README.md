@@ -38,3 +38,6 @@ cd api
 npm run deploy
 ```
 This deploys backend "functions" ie the API gateway methods as well as building Angular app in ../web.
+
+# Tests
+Use `npm run test`
