@@ -58,7 +58,12 @@ firebase > c
 cd api
 npm run deploy
 ```
-This deploys backend "functions" ie the API gateway methods as well as building Angular app in ../web.
+This deploys backend "functions" ie the API gateway methods as well as building the Angular app from ./web.
+
+Tail logs for deployed functions with:
+```
+firebase functions:log
+```
 
 # Tests
 Use `npm run test`

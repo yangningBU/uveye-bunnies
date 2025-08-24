@@ -1,7 +1,10 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
-import { DEFAULT_METRICS, EVENTS } from "../constants.js";
-import { calculateAggregatesAndEntities } from "../utilities.js";
+import { DEFAULT_CONFIG, DEFAULT_METRICS, EVENTS } from "../constants.js";
+import {
+  calculateAggregatesAndEntities,
+  calculateDownstreamMetrics,
+} from "../utilities.js";
 
 const emptyState = DEFAULT_METRICS;
 const noChanges = {
@@ -113,6 +116,8 @@ const snapshot1 = {
   ],
 };
 
+const expectedTotalHappiness1 = 3 * 3 + 2 * 1 + 2 * 1 * 2;
+
 const timeline2 = [
   {
     eventType: EVENTS.bunny.created,
@@ -175,8 +180,10 @@ const snapshot2 = {
   ],
 };
 
-describe("utilities", () => {
-  describe("#calculateAggregatesAndEntities()", () => {
+const expectedTotalHappiness2 = 6 * 3 + 2 * 1 + 2 * 2 * 2;
+
+describe("state calculations", () => {
+  describe("aggregated state", () => {
     const findBunnySimple = (list, id) => {
       const match = list.find((b) => b.id === id);
       return {
@@ -194,6 +201,13 @@ describe("utilities", () => {
       );
 
       assert.deepEqual(result, noChanges);
+
+      const { totalHappiness } = calculateDownstreamMetrics(
+        result.aggregates,
+        DEFAULT_CONFIG,
+      );
+
+      assert.equal(totalHappiness, 0);
     });
 
     it(
@@ -207,6 +221,13 @@ describe("utilities", () => {
 
         assert.deepEqual(result.aggregates, snapshot1.aggregates);
         assertEntitiesHaveExpectedFields(result, snapshot1.entities);
+
+        const { totalHappiness } = calculateDownstreamMetrics(
+          result.aggregates,
+          DEFAULT_CONFIG,
+        );
+
+        assert.equal(totalHappiness, expectedTotalHappiness1);
       });
 
     const findBunnyWithExistingEntities = (list, bunnyId) => {
@@ -244,6 +265,13 @@ describe("utilities", () => {
 
       assert.deepEqual(result.aggregates, snapshot2.aggregates);
       assertEntitiesHaveExpectedFields(result, snapshot2.entities);
+
+      const { totalHappiness } = calculateDownstreamMetrics(
+        result.aggregates,
+        DEFAULT_CONFIG,
+      );
+
+      assert.equal(totalHappiness, expectedTotalHappiness2);
     });
 
     // include play date with bunny that already happened

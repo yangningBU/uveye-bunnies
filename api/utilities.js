@@ -101,7 +101,7 @@ export const calculateHappiness = (bunnyDoc, config) => {
   return result;
 };
 
-const calculateDownstreamMetrics = (metrics, config = DEFAULT_CONFIG) => {
+export const calculateDownstreamMetrics = (metrics, config = DEFAULT_CONFIG) => {
   const totalHappiness = Object
     .entries(AGGREGATE_HAPPINESSS_FIELD_MAP.totalHappiness)
     .map(([metric, { configField, multiplier }]) => (
