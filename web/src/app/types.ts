@@ -13,10 +13,18 @@ interface BunnyListItem {
   happinessCount: number;
 }
 
+interface ConfigDetail {
+  pointsCarrotsEaten: number;
+  pointsLettuceEaten: number;
+  pointsPlayDatesHad: number;
+  eventCountTriggerForSnapshot: number;
+}
+
 interface DashboardResponse {
   bunnies: BunnyListItem[];
   bunniesCount: number;
   happinessAverage: number;
+  happinessTotal: number;
 }
 
 interface EatSomethingRequest {
@@ -38,8 +46,9 @@ interface PlayDateEventRequest {
 export type {
   BunnyDetailModel,
   BunnyListItem,
-  EatSomethingRequest,
+  ConfigDetail,
   DashboardResponse,
+  EatSomethingRequest,
   LogEventResult,
   PlayDateEventRequest,
 };

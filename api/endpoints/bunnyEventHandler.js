@@ -1,7 +1,5 @@
 import _ from "lodash";
-import { FieldValue } from "firebase-admin/firestore";
 import {
-  COLLECTIONS,
   EVENTS,
   REQUIRED_EVENT_FIELDS,
 } from "../constants.js";
@@ -10,6 +8,7 @@ import {
   getBunnyById,
   getBunnyFieldValue,
   getConfig,
+  recordEvent,
   triggerUpdateToState,
   validateEventFields,
 } from "../utilities.js";
@@ -35,17 +34,6 @@ const getReturnObjectForLoggedEvent = async (db, newEvent) => {
   }
 
   return out;
-};
-
-const recordEvent = async (db, eventType, validEventFields) => {
-  const collection = await db.collection(COLLECTIONS.eventLog);
-  const querySnapshot = await collection.add({
-    eventType,
-    timestamp: FieldValue.serverTimestamp(),
-    ...validEventFields,
-  });
-  const newEventRef = await querySnapshot.get();
-  return { id: newEventRef.id, ...newEventRef.data() };
 };
 
 const logBunnyEvent = async (db, request, response) => {

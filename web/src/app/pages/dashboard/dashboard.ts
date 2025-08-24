@@ -34,6 +34,7 @@ export class Dashboard {
   bunnies = signal<BunnyListItem[]>([]);
   totalCount = signal<number>(0);
   averageHappiness = signal<number>(0);
+  totalHappiness = signal<number>(0);
   newBunnyName = '';
 
   sanitizeName(): void {
@@ -52,6 +53,7 @@ export class Dashboard {
       this.bunnies.set(data.bunnies);
       this.totalCount.set(data.bunniesCount);
       this.averageHappiness.set(data.happinessAverage);
+      this.totalHappiness.set(data.happinessTotal);
     } catch (err: unknown) {
       console.error(err);
       this.error.set((err as string).toString());

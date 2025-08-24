@@ -8,7 +8,9 @@ import { setGlobalOptions } from "firebase-functions/v2";
 import bunnyEventHandler from "./endpoints/bunnyEventHandler.js";
 import createBunnyHandler from "./endpoints/createBunnyHandler.js";
 import getBunnyHandler from "./endpoints/getBunnyHandler.js";
+import getConfigHandler from "./endpoints/getConfigHandler.js";
 import getDashboardHandler from "./endpoints/getDashboardHandler.js";
+import setConfigHandler from "./endpoints/setConfigHandler.js";
 import serviceAccount from "./credentials.json" with { type: "json" };
 import { setCorsHeaders } from "./utilities.js";
 
@@ -45,6 +47,16 @@ export const recordBunnyEvent = onRequest((req, res) => {
 export const createBunny = onRequest((req, res) => {
   setCorsHeaders(res);
   createBunnyHandler(db, req, res);
+});
+
+export const getConfig = onRequest((req, res) => {
+  setCorsHeaders(res);
+  getConfigHandler(db, req, res);
+});
+
+export const setConfig = onRequest((req, res) => {
+  setCorsHeaders(res);
+  setConfigHandler(db, req, res);
 });
 
 // export const onCreateTrigger = onDocumentWritten(

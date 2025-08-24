@@ -281,6 +281,8 @@ export const calculateAggregatesAndEntities = async (
     case EVENTS.bunny.playDateHad:
       await handlePlayDateEvent(event, entities, aggregates, findBunny);
       break;
+    default:
+      console.log(`Not processing event ${event.eventType}.`);
     }
   }
 
@@ -319,7 +321,7 @@ const getConfigRef = async (db) => {
 };
 
 export const getConfig = async (db) => {
-  let configRef = getConfigRef(db);
+  let configRef = await getConfigRef(db);
 
   if (!configRef.exists) {
     await db
@@ -506,4 +508,15 @@ export const validateEventFields = (eventType, requestPayload) => {
       filtered[field] = requestPayload[field];
       return filtered;
     }, {});
+};
+
+export const recordEvent = async (db, eventType, validEventFields) => {
+  const collection = await db.collection(COLLECTIONS.eventLog);
+  const querySnapshot = await collection.add({
+    eventType,
+    timestamp: FieldValue.serverTimestamp(),
+    ...validEventFields,
+  });
+  const newEventRef = await querySnapshot.get();
+  return { id: newEventRef.id, ...newEventRef.data() };
 };

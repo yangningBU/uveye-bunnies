@@ -51,11 +51,7 @@ export const EVENTS = {
     lettuceEaten: "bunny.lettuceEaten",
     playDateHad: "bunny.playDateHad",
   },
-  config: {
-    setCarrotPoints: "config.setCarrotPoints",
-    setLettucePoints: "config.setLettucePoints",
-    setPlayDatePoints: "config.setPlayDatePoints",
-  },
+  config: "config.set",
   snapshot: "meta.snapshot",
 };
 

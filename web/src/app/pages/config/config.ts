@@ -1,48 +1,64 @@
-import { Component, signal } from '@angular/core';
+import _ from "lodash";
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Functions, httpsCallable } from '@angular/fire/functions';
+import { ConfigDetail } from '../../types';
 
 @Component({
   selector: 'app-config',
   imports: [CommonModule, FormsModule],
-  template: `
-    <h3 class="mb-3">Configuration</h3>
-    <form class="row g-3" (ngSubmit)="save()">
-      <div class="col-md-3">
-        <label class="form-label">EATING_CARROT_POINTS</label>
-        <input class="form-control" type="number" [(ngModel)]="carrot" name="carrot" />
-      </div>
-      <div class="col-md-3">
-        <label class="form-label">EATING_LETTUCE_POINTS</label>
-        <input class="form-control" type="number" [(ngModel)]="lettuce" name="lettuce" />
-      </div>
-      <div class="col-md-3">
-        <label class="form-label">PLAY_DATE_POINTS</label>
-        <input class="form-control" type="number" [(ngModel)]="play" name="play" />
-      </div>
-      <div class="col-12">
-        <button class="btn btn-primary" type="submit">Save</button>
-      </div>
-    </form>
-  `,
-  styles: ``
+  templateUrl: "./config.html",
 })
 export class Config {
-  carrot = 3;
-  lettuce = 1;
-  play = 2;
+  loading = signal<boolean>(false);
+  pointsCarrotsEaten = 0;
+  pointsLettuceEaten = 0;
+  pointsPlayDatesHad = 0;
+  eventCountTriggerForSnapshot = 0;
+  functions = inject(Functions);
 
-  async save(): Promise<void> {
+  async ngOnInit(): Promise<void> {
     try {
-      const res = await fetch('/api/config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ EATING_CARROT_POINTS: this.carrot, EATING_LETTUCE_POINTS: this.lettuce, PLAY_DATE_POINTS: this.play })
+      this.loading.set(true);
+      const getConfig = httpsCallable<void, ConfigDetail>(this.functions, 'getConfig');
+      const configResponse = await getConfig();
+      const configData = configResponse.data;
+      if (_.isEmpty(configData)) {
+        throw new Error(`Failed to load config: ${configResponse}`);
+      }
+      const {
+        pointsCarrotsEaten,
+        pointsLettuceEaten,
+        pointsPlayDatesHad,
+        eventCountTriggerForSnapshot,
+      } = configData;
+      this.pointsCarrotsEaten = pointsCarrotsEaten;
+      this.pointsLettuceEaten = pointsLettuceEaten;
+      this.pointsPlayDatesHad = pointsPlayDatesHad;
+      this.eventCountTriggerForSnapshot = eventCountTriggerForSnapshot;
+    } catch (e) {
+      console.error(e);
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  async saveConfig(): Promise<void> {
+    try {
+      this.loading.set(true);
+      const setConfig = httpsCallable<ConfigDetail, ConfigDetail>(this.functions, 'setConfig');
+      const updatedResult = await setConfig({
+        pointsCarrotsEaten: this.pointsCarrotsEaten,
+        pointsLettuceEaten: this.pointsLettuceEaten,
+        pointsPlayDatesHad: this.pointsPlayDatesHad,
+        eventCountTriggerForSnapshot: this.eventCountTriggerForSnapshot,
       });
-      if (!res.ok) throw new Error('Failed to save config');
-      alert('Config saved, recalculating...');
-    } catch (err) {
-      console.error(err);
+      console.log("Updated config is:", updatedResult);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      this.loading.set(false);
     }
   }
 }

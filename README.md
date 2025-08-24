@@ -32,6 +32,27 @@ To call functions locally in an interactive console:
 npm run start
 ```
 
+To use the `db` in a REPL shell run the shell (or start) command and then run these imports:
+```
+firebase > const { initializeApp, cert } = await import("firebase-admin/app");
+firebase > const { getFirestore } = await import("firebase-admin/firestore");
+firebase > const { default: serviceAccount } = await import("./credentials.json", { with: { type: "json" } });
+firebase > initializeApp({credential: cert(serviceAccount)});
+firebase > const db = getFirestore();
+```
+Then use the `db` freely:
+```
+firebase > const { getConfig } = await import("./utilities.js");
+firebase > const c = await getConfig(db);
+firebase > c
+{
+  pointsCarrotsEaten: 3,
+  pointsLettuceEaten: 1,
+  pointsPlayDatesHad: 2,
+  eventCountTriggerForSnapshot: 100
+}
+```
+
 # Deployment
 ```
 cd api

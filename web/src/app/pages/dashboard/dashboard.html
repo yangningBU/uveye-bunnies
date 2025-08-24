@@ -12,16 +12,22 @@
     </div>
   }
   <div class="row mb-4">
-    <div class="col-auto">
+    <div class="col">
       <div class="card p-3">
-        <div class="text-muted">Total bunnies</div>
+        <div class="text-muted">Total Bunnies</div>
         <div class="fs-3 fw-bold">{{ totalCount() }}</div>
       </div>
     </div>
-    <div class="col-auto">
+    <div class="col">
       <div class="card p-3">
-        <div class="text-muted">Average happiness</div>
+        <div class="text-muted">Average Happiness</div>
         <div class="fs-3 fw-bold">{{ averageHappiness() | number:'1.1-1' }}</div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card p-3">
+        <div class="text-muted">Total Happiness</div>
+        <div class="fs-3 fw-bold">{{ totalHappiness() }}</div>
       </div>
     </div>
   </div>
@@ -37,7 +43,7 @@
 
   <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
     <div class="col" *ngFor="let b of bunnies()">
-      <div class="card h-100">
+      <div class="card h-100" [routerLink]="['/bunnies', b.id]">
         <div class="card-body">
           <h5 class="card-title">{{ b.name }}</h5>
           <p class="card-text mb-2">Happiness: {{ b.happinessCount }}</p>

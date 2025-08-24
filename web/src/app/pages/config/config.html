@@ -1,0 +1,27 @@
+<h3 class="mb-3">Configuration</h3>
+<form class="row g-3" (ngSubmit)="saveConfig()">
+  <div class="col-md-3">
+    <label class="form-label">Points for Eating Carrots</label>
+    <input class="form-control" type="number" [(ngModel)]="pointsCarrotsEaten" name="carrot" [disabled]="loading()"/>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Points for Eating Lettuce</label>
+    <input class="form-control" type="number" [(ngModel)]="pointsLettuceEaten" name="lettuce" [disabled]="loading()"/>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Points for Playing Games</label>
+    <input class="form-control" type="number" [(ngModel)]="pointsPlayDatesHad" name="play" [disabled]="loading()"/>
+  </div>
+  <div class="col-md-9">
+    <label class="form-label">Event Count Trigger for new Snapshot</label>
+    <input class="form-control" type="number" [(ngModel)]="eventCountTriggerForSnapshot" name="trigger" [disabled]="loading()"/>
+  </div>
+  <div class="col-12 d-flex align-items-center">
+    <button class="btn btn-primary me-2" type="submit" [disabled]="loading()">Save</button>
+    @if (loading()) {
+      <div class="spinner-border" role="status" id="spinner">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    }
+  </div>
+</form>

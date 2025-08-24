@@ -47,7 +47,7 @@ const dashboardFunction = async (db, request, response) => {
       data: {
         bunnies: formatBunnies(bunnies, config),
         bunniesCount: bunnyCount,
-        totalHappiness,
+        happinessTotal: totalHappiness,
         happinessAverage: safeHappinessAverage(totalHappiness, bunnyCount),
       },
     });
