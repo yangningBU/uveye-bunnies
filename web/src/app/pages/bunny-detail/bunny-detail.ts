@@ -12,6 +12,8 @@ import type {
   BunnyDetailModel,
   BunnyListItem,
   DashboardResponse,
+  EatSomethingRequest,
+  LogEventResult,
   PlayDateEventRequest,
 } from "../../types";
 
@@ -65,7 +67,7 @@ export class BunnyDetail {
   private async reload(id: string): Promise<void> {
     this.loading.set(true);
     try {
-      const getBunny = httpsCallable<unknown, BunnyDetailModel>(this.functions, 'getBunny');
+      const getBunny = httpsCallable<{id: string}, BunnyDetailModel>(this.functions, 'getBunny');
       const bunnyResponse = await getBunny({id});
       const bunnyData = bunnyResponse.data;
       if (_.isEmpty(bunnyData)) {
@@ -74,7 +76,7 @@ export class BunnyDetail {
 
       this.bunny.set(bunnyData);
 
-      const getDashboard = httpsCallable<unknown, DashboardResponse>(this.functions, 'dashboard');
+      const getDashboard = httpsCallable<void, DashboardResponse>(this.functions, 'dashboard');
       const dashboardResponse = await getDashboard();
       const dashboardData = dashboardResponse.data;
       if (_.isEmpty(dashboardData)) {
@@ -93,11 +95,10 @@ export class BunnyDetail {
   async increment(type: 'INC_CARROT_EATEN' | 'INC_LETTUCE_EATEN'): Promise<void> {
     if (!this.bunny()) return;
     try {
-      // FIXME change bunny.carrotsEaten event to bunny.carrotEaten;
       const eventType = type === 'INC_CARROT_EATEN' ?
         'bunny.carrotsEaten':
         'bunny.lettuceEaten';
-      const logEventCallable = httpsCallable<{ eventType: string, bunnyId: string }, { count: number, happiness: number }>(this.functions, 'recordBunnyEvent');
+      const logEventCallable = httpsCallable<EatSomethingRequest, LogEventResult>(this.functions, 'recordBunnyEvent');
       const updatedResult = await logEventCallable({ eventType, bunnyId: this.bunnyId });
       const count = updatedResult.data.count;
       const newHappiness = updatedResult.data.happiness;
@@ -118,9 +119,8 @@ export class BunnyDetail {
   async recordPlayDate(): Promise<void> {
     if (!this.bunny() || !this.selectedFriendId) return;
     try {
-      // FIXME change bunny.carrotsEaten event to bunny.carrotEaten;
       const eventType = 'bunny.playDateHad';
-      const recordPlayDateEvent = httpsCallable<PlayDateEventRequest, { count: number, happiness: number }>(this.functions, 'recordBunnyEvent');
+      const recordPlayDateEvent = httpsCallable<PlayDateEventRequest, LogEventResult>(this.functions, 'recordBunnyEvent');
       const updatedResult = await recordPlayDateEvent({
         eventType,
         bunnyId: this.bunnyId,

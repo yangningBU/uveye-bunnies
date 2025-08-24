@@ -133,14 +133,13 @@ const findBunnyInListOrDB = (list, db, bunnyId) => {
   console.debug(`Unable to find bunny by ID ${bunnyId} in list or DB.`);
 };
 
-const calculateAggregatesAndEntities = async (db) => {
-  const eventsAndSnapshot = await getAllEventsSinceLastSnapshot(db);
+const calculateAggregatesAndEntities = async (db, lastSnapshot, events) => {
   const config = await getConfig(db);
 
   const entities = [];
-  const aggregateCollector = eventsAndSnapshot.lastSnapshot;
+  const aggregateCollector = { ...lastSnapshot };
 
-  eventsAndSnapshot.events.forEach((e) => {
+  events.forEach((e) => {
     switch (e.eventType) {
     case EVENTS.bunny.created: {
       const newBunny = {
@@ -378,11 +377,8 @@ export const recordBunny = async (db, bunny) => {
   return newBunny;
 };
 
-export const triggerUpdateToState = async (db, event) => {
+export const triggerUpdateToState = async (db) => {
   console.log("Triggering downstream processing following event...");
-  if (!event) {
-    throw new Error("Unable to process missing event.");
-  }
 
   const newState = await calculateAggregatesAndEntities(db);
 

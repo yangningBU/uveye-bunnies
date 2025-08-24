@@ -19,6 +19,16 @@ interface DashboardResponse {
   happinessAverage: number;
 }
 
+interface EatSomethingRequest {
+  eventType: string;
+  bunnyId: string;
+}
+
+interface LogEventResult {
+  count: number;
+  happiness: number;
+}
+
 interface PlayDateEventRequest {
   eventType: string;
   bunnyId: string;
@@ -28,6 +38,8 @@ interface PlayDateEventRequest {
 export type {
   BunnyDetailModel,
   BunnyListItem,
+  EatSomethingRequest,
   DashboardResponse,
+  LogEventResult,
   PlayDateEventRequest,
 };
