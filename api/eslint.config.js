@@ -32,7 +32,14 @@ export default [
       "indent": ["error", 2],
       "no-restricted-globals": ["error", "name", "length"],
       "prefer-arrow-callback": "error",
-      "quotes": ["error", "double", { allowTemplateLiterals: true }],
+      "quotes": [
+        "error",
+        "double",
+        {
+          allowTemplateLiterals: true,
+          avoidEscape: true,
+        },
+      ],
       "object-curly-spacing": ["error", "always"],
       "require-jsdoc": 0,
     },
