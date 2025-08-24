@@ -1,8 +1,8 @@
 export const AGGREGATE_HAPPINESSS_FIELD_MAP = {
   totalHappiness: {
-    totalCarrotsEaten: "pointsCarrotsEaten",
-    totalLettuceEaten: "pointsLettuceEaten",
-    totalPlayDatesHad: "pointsPlayDatesHad",
+    totalCarrotsEaten: { configField: "pointsCarrotsEaten", multiplier: 1 },
+    totalLettuceEaten: { configField: "pointsLettuceEaten", multiplier: 1 },
+    totalPlayDatesHad: { configField: "pointsPlayDatesHad", multiplier: 2 },
   },
 };
 
