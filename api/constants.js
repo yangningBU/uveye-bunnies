@@ -3,6 +3,7 @@ export const AGGREGATE_HAPPINESSS_FIELD_MAP = {
     totalCarrotsEaten: { configField: "pointsCarrotsEaten", multiplier: 1 },
     totalLettuceEaten: { configField: "pointsLettuceEaten", multiplier: 1 },
     totalPlayDatesHad: { configField: "pointsPlayDatesHad", multiplier: 2 },
+    totalRepeatDates: { configField: "pointsPlayDatesHad", multiplier: 2 },
   },
 };
 
@@ -17,6 +18,8 @@ export const DEFAULT_BUNNY = {
   carrotsEaten: 0,
   lettuceEaten: 0,
   playDatesHad: 0,
+  previousPlayMates: new Set(),
+  repeatPlayDates: 0,
 };
 
 export const DEFAULT_CONFIG = {
@@ -33,6 +36,7 @@ export const DEFAULT_METRICS = {
   totalCarrotsEaten: 0,
   totalLettuceEaten: 0,
   totalPlayDatesHad: 0,
+  totalRepeatDates: 0,
   totalHappiness: 0,
 };
 
@@ -62,6 +66,7 @@ export const HAPPINESS_BUNNY_FIELD_CONFIG_MAP = {
   carrotsEaten: "pointsCarrotsEaten",
   lettuceEaten: "pointsLettuceEaten",
   playDatesHad: "pointsPlayDatesHad",
+  repeatPlayDates: "pointsPlayDatesHad",
 };
 
 export const REQUIRED_EVENT_FIELDS = {
@@ -71,14 +76,15 @@ export const REQUIRED_EVENT_FIELDS = {
   "bunny.playDateHad": ["bunnyId", "otherBunnyId"],
 };
 
-export const SNAPSHOT_FIELDS = [
-  "bunnyCount",
-  "eventCount",
-  "totalCarrotsEaten",
-  "totalLettuceEaten",
-  "totalPlayDatesHad",
-  "totalHappiness",
-];
+export const SNAPSHOT_FIELDS_WITH_DEFAULT = {
+  "bunnyCount": 0,
+  "eventCount": 0,
+  "totalCarrotsEaten": 0,
+  "totalLettuceEaten": 0,
+  "totalPlayDatesHad": 0,
+  "totalRepeatDates": 0,
+  "totalHappiness": 0,
+};
 
 export const eventTypeToBunnyField = (eventType) => {
   return EVENT_TO_BUNNY_FIELD_MAP[eventType];

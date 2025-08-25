@@ -72,6 +72,8 @@ export const aggregate1 = {
       carrotsEaten: 1,
       lettuceEaten: 1,
       playDatesHad: 0,
+      previousPlayMates: new Set(),
+      repeatPlayDates: 0,
     },
     {
       id: 101,
@@ -79,6 +81,8 @@ export const aggregate1 = {
       carrotsEaten: 1,
       lettuceEaten: 1,
       playDatesHad: 1,
+      previousPlayMates: new Set([102]),
+      repeatPlayDates: 0,
     },
     {
       id: 102,
@@ -86,13 +90,10 @@ export const aggregate1 = {
       carrotsEaten: 1,
       lettuceEaten: 0,
       playDatesHad: 1,
+      previousPlayMates: new Set([101]),
+      repeatPlayDates: 0,
     },
   ],
-};
-
-export const snapshot1 = {
-  ...aggregate1,
-  aggregates: { ...aggregate1.aggregates, incrementalEventCount: 0 },
 };
 
 export const finalTimestampInSnapshotTwoEventBundle = new Date("2023-01-02T00:04:00Z");
@@ -101,7 +102,6 @@ export const timeline2 = [
     eventType: EVENTS.snapshot,
     bunnyCount: 3,
     eventCount: 9,
-    incrementalEventCount: 0,
     totalCarrotsEaten: 3,
     totalLettuceEaten: 2,
     totalPlayDatesHad: 1,
@@ -155,6 +155,8 @@ export const aggregate2 = {
       carrotsEaten: 2,
       lettuceEaten: 1,
       playDatesHad: 1,
+      previousPlayMates: new Set([200]),
+      repeatPlayDates: 0,
     },
     {
       id: 101,
@@ -162,6 +164,17 @@ export const aggregate2 = {
       carrotsEaten: 2,
       lettuceEaten: 1,
       playDatesHad: 1,
+      previousPlayMates: new Set([102]),
+      repeatPlayDates: 0,
+    },
+    {
+      id: 102,
+      name: "Ralphy",
+      carrotsEaten: 1,
+      lettuceEaten: 0,
+      playDatesHad: 1,
+      previousPlayMates: new Set([101]),
+      repeatPlayDates: 0,
     },
     {
       id: 200,
@@ -169,6 +182,8 @@ export const aggregate2 = {
       carrotsEaten: 1,
       lettuceEaten: 0,
       playDatesHad: 1,
+      previousPlayMates: new Set([100]),
+      repeatPlayDates: 0,
     },
   ],
 };
@@ -179,7 +194,6 @@ export const timeline3 = [
     eventType: EVENTS.snapshot,
     bunnyCount: 4,
     eventCount: 15,
-    incrementalEventCount: 0,
     totalCarrotsEaten: 6,
     totalLettuceEaten: 2,
     totalPlayDatesHad: 2,
@@ -230,6 +244,8 @@ export const aggregate3 = {
       carrotsEaten: 2,
       lettuceEaten: 1,
       playDatesHad: 4,
+      previousPlayMates: new Set([200, 300]),
+      repeatPlayDates: 2,
     },
     {
       id: 101,
@@ -237,6 +253,17 @@ export const aggregate3 = {
       carrotsEaten: 2,
       lettuceEaten: 1,
       playDatesHad: 1,
+      previousPlayMates: new Set([102]),
+      repeatPlayDates: 0,
+    },
+    {
+      id: 102,
+      name: "Ralphy",
+      carrotsEaten: 1,
+      lettuceEaten: 0,
+      playDatesHad: 1,
+      previousPlayMates: new Set([101]),
+      repeatPlayDates: 0,
     },
     {
       id: 200,
@@ -244,6 +271,8 @@ export const aggregate3 = {
       carrotsEaten: 1,
       lettuceEaten: 0,
       playDatesHad: 3,
+      previousPlayMates: new Set([100]),
+      repeatPlayDates: 2,
     },
     {
       id: 300,
@@ -251,6 +280,8 @@ export const aggregate3 = {
       carrotsEaten: 0,
       lettuceEaten: 0,
       playDatesHad: 1,
+      previousPlayMates: new Set([100]),
+      repeatPlayDates: 0,
     },
   ],
 };

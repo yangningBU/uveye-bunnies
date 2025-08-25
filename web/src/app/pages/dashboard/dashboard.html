@@ -50,9 +50,13 @@
           <a class="btn btn-outline-secondary btn-sm" [routerLink]="['/bunnies', b.id]">Open</a>
         </div>
       </div>
-      @if (!bunnies()) {
-        <h3>No bunnies yet. Go ahead and add one!</h3>
-      }
     </div>
   </div>
+  @if (bunnies(); as bunnies) {
+    @if (bunnies.length === 0) {
+      <div class="row">
+        <h3>No bunnies yet. Go ahead and add one!</h3>
+      </div>
+    }
+  }
 </div>

@@ -22,6 +22,12 @@ const noChanges = {
   entities: [],
 };
 
+function setsEqual(a, b) {
+  if (a.size !== b.size) return false;
+  for (const value of a) if (!b.has(value)) return false;
+  return true;
+}
+
 function assertEntitiesHaveExpectedFields(resultEntities, expectedEntities) {
   // We"re not using assert.deepEqual because there are extra fields
   // like createdAt and updatedAt that we don"t care to compare for now
@@ -30,13 +36,23 @@ function assertEntitiesHaveExpectedFields(resultEntities, expectedEntities) {
   expectedEntities.forEach((entity) => {
     const matchingResult = resultEntities.find((b) => b.id === entity.id);
     Object.keys(entity).forEach((key) => {
-      assert.equal(
-        entity[key],
-        matchingResult[key],
-        `Supposed to be ${entity[key]} but got ${matchingResult[key]} ` +
-        `for ${key}. Expected: ${JSON.stringify(entity)}, ` +
-        `Result: ${JSON.stringify(matchingResult)}`,
-      );
+      if (entity[key] instanceof Set) {
+        assert(
+          setsEqual(entity[key], matchingResult[key]),
+          `Expected ${Array.from(entity[key])} with ${entity[key].size} elements to ` +
+          `match ${Array.from(matchingResult[key])} with ${matchingResult[key].size} elements. ` +
+          `Expected entity is ${JSON.stringify(entity)} and the actual result is ` +
+          `${JSON.stringify(matchingResult)}.`,
+        );
+      } else {
+        assert.equal(
+          entity[key],
+          matchingResult[key],
+          `Supposed to be ${entity[key]} but got ${matchingResult[key]} ` +
+          `for ${key}. Expected: ${JSON.stringify(entity)}, ` +
+          `Result: ${JSON.stringify(matchingResult)}`,
+        );
+      }
     });
   });
 }
@@ -53,7 +69,11 @@ function findBunnyWithExistingEntities(list, bunnyId, entities, sinceTimestamp) 
   const dbMatch = entities.find((b) => b.id === bunnyId);
   if (dbMatch) {
     return {
-      bunny: { ...dbMatch, lastEventAppliedTimestamp: sinceTimestamp },
+      bunny: {
+        ...dbMatch,
+        previousPlayMates: new Set(dbMatch.previousPlayMates),
+        lastEventAppliedTimestamp: sinceTimestamp,
+      },
       alreadyInList: false,
     };
   }

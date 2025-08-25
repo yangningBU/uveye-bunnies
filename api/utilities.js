@@ -10,13 +10,17 @@ import {
   EVENTS,
   HAPPINESS_BUNNY_FIELD_CONFIG_MAP,
   REQUIRED_EVENT_FIELDS,
-  SNAPSHOT_FIELDS,
+  SNAPSHOT_FIELDS_WITH_DEFAULT,
 } from "./constants.js";
 
 const sanitizeSnapshot = (snapshot) => {
   if (!snapshot) return {};
 
-  return Object.fromEntries(SNAPSHOT_FIELDS.map((key) => [key, snapshot[key]]));
+  return Object.fromEntries(
+    Object
+      .keys(SNAPSHOT_FIELDS_WITH_DEFAULT)
+      .map((key) => [key, snapshot[key] || SNAPSHOT_FIELDS_WITH_DEFAULT[key]]),
+  );
 };
 
 export const getLastSnapshot = async (db) => {
@@ -102,20 +106,23 @@ export const calculateHappiness = (bunnyDoc, config) => {
   const result = Object
     .entries(HAPPINESS_BUNNY_FIELD_CONFIG_MAP)
     .map(([bunnyField, configField]) => {
-      const propertyCount = bunnyDoc[bunnyField];
+      const propertyCount = bunnyDoc[bunnyField] ?? 0;
       const weight = config[configField];
       return propertyCount * weight;
     })
     .reduce((sum, points) => sum + points, 0);
+  console.debug(`calculateHppiness(). Result:`, result);
   return result;
 };
 
 export const calculateDownstreamMetrics = (metrics, config = DEFAULT_CONFIG) => {
   const totalHappiness = Object
     .entries(AGGREGATE_HAPPINESSS_FIELD_MAP.totalHappiness)
-    .map(([metric, { configField, multiplier }]) => (
-      metrics[metric] * config[configField] * multiplier
-    ))
+    .map(([metric, { configField, multiplier }]) => {
+      const value = metrics[metric] ?? 0;
+      const weight = config[configField] * multiplier;
+      return value * weight;
+    })
     .reduce((sum, points) => sum + points, 0);
 
   const dependentMetrics = {
@@ -137,7 +144,11 @@ const findBunnyInListOrDB = async (db, list, bunnyId) => {
   const dbMatch = await getBunnyById(db, bunnyId);
   if (dbMatch) {
     return {
-      bunny: { ...dbMatch },
+      bunny: {
+        ...dbMatch,
+        previousPlayMates: new Set(dbMatch.previousPlayMates),
+        repeatPlayDates: dbMatch.repeatPlayDates ?? 0,
+      },
       alreadyInList: false,
     };
   }
@@ -192,10 +203,7 @@ const handleCarrotsEatenEvent = async (
       entities.push(bunny);
     }
   } else {
-    console.warn(
-      "Attempting to increment carrot count on bunny that hasn't been " +
-      `created yet (bunny ID ${event.bunnyId}). Skipping.`,
-    );
+    console.log("Event bunny.carrotsEaten skipped.");
   }
   aggregates.totalCarrotsEaten += 1;
 };
@@ -217,10 +225,7 @@ const handleLettuceEatenEvent = async (
       entities.push(bunny);
     }
   } else {
-    console.warn(
-      "Attempting to increment lettuce count on bunny that hasn't been " +
-      `created yet (bunny ID ${event.bunnyId}). Skipping.`,
-    );
+    console.log("Event bunny.lettuceEaten skipped.");
   }
   aggregates.totalLettuceEaten += 1;
 };
@@ -250,6 +255,19 @@ const handlePlayDateEvent = async (
     secondBunny.playDatesHad += 1;
     firstBunny.lastEventAppliedTimestamp = event.timestamp;
     secondBunny.lastEventAppliedTimestamp = event.timestamp;
+
+    if (
+      firstBunny.previousPlayMates.has(secondBunny.id) ||
+      secondBunny.previousPlayMates.has(firstBunny.id)
+    ) {
+      firstBunny.repeatPlayDates += 1;
+      secondBunny.repeatPlayDates += 1;
+      aggregates.totalRepeatDates += 1;
+    }
+
+    firstBunny.previousPlayMates.add(secondBunny.id);
+    secondBunny.previousPlayMates.add(firstBunny.id);
+
     if (!alreadyInList1) {
       entities.push(firstBunny);
     }
@@ -257,11 +275,7 @@ const handlePlayDateEvent = async (
       entities.push(secondBunny);
     }
   } else {
-    console.warn(
-      "Attempting to record playdate with bunny that hasn't been " +
-      `created yet (IDS ${event.bunnyId}, ${event.otherBunnyId}). Or already `,
-      "applied this event.",
-    );
+    console.log("Event bunny.playDateHad skipped.");
   }
   aggregates.totalPlayDatesHad += 1;
 };
@@ -291,9 +305,6 @@ export const calculateAggregatesAndEntities = async (
     case EVENTS.bunny.playDateHad:
       await handlePlayDateEvent(event, entities, aggregates, findBunny);
       break;
-    // case EVENTS.config:
-    //   await handleConfigSetEvent(event);
-    //   break;
     default:
       console.log(`Not processing event ${event.eventType}.`);
     }
@@ -378,11 +389,24 @@ export const getBunnyById = async (db, bunnyId) => {
   };
 };
 
+const sanitizeEntity = (entity) => {
+  const sanitized = {};
+  Object.keys(entity).forEach((key) => {
+    let value = entity[key];
+    if (value instanceof Set) {
+      value = Array.from(value);
+    }
+    sanitized[key] = value;
+  });
+  return sanitized;
+};
+
 const batchCommitEntities = async (db, entities) => {
   const batch = db.batch();
   entities.forEach((entity) => {
+    const sanitizedEntity = sanitizeEntity(entity);
     const doc = db.collection(COLLECTIONS.bunnies).doc(entity.id);
-    batch.set(doc, entity);
+    batch.set(doc, sanitizedEntity);
   });
 
   await batch.commit();
@@ -425,7 +449,6 @@ export const recordBunny = async (db, bunny) => {
   };
 
   console.log("Attempting to save this doc:", bunnyDocument);
-  // FIXME: what if this fails?
   await collection.doc(bunny.id).set(bunnyDocument);
 
   const newBunnySnapshot = await collection.doc(bunny.id).get();
@@ -441,14 +464,11 @@ export const recordBunny = async (db, bunny) => {
 export const createNewSnapshot = async (db) => {
   console.log("Generating new snapshot...");
   const currentAggregate = await getAggregateSummary(db);
-  const withRelevantFields = sanitizeSnapshot(currentAggregate);
-  const snapshotContent = {
-    ...withRelevantFields,
-    incrementalEventCount: 0,
-  };
+  const snapshotContent = sanitizeSnapshot(currentAggregate);
   await recordEvent(db, EVENTS.snapshot, snapshotContent);
   const updatedAggregate = {
     ...snapshotContent,
+    incrementalEventCount: 0,
   };
   console.log("Updating aggregate summary to reset state.");
   setAggregateSummary(db, updatedAggregate);
@@ -461,7 +481,7 @@ export const triggerUpdateToState = async (db) => {
   const config = await getConfig(db);
   const { lastSnapshot, events } = await getAllEventsSinceLastSnapshot(db);
 
-  // Stage One: create projection from event list
+  // Stage One: create projection with preliminary aggregations
   const stageOneState = await calculateAggregatesAndEntities(
     lastSnapshot,
     events,
