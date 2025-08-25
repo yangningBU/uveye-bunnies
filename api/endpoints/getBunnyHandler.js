@@ -23,7 +23,7 @@ const getBunny = async (db, bunnyId) => {
 const getBunnyHandler = async (db, request, response) => {
   try {
     const bunnyId = request?.body?.data?.id;
-    if (_.isEmpty(bunnyId)) {
+    if (_.isNil(bunnyId)) {
       const msg = "Missing required bunny :id parameter.";
       console.log(msg);
       response
@@ -33,7 +33,7 @@ const getBunnyHandler = async (db, request, response) => {
     }
 
     const bunny = await getBunny(db, bunnyId);
-    if (_.isEmpty(bunny)) {
+    if (_.isNil(bunny)) {
       const msg = `Bunny with ID "${bunnyId}" not found.`;
       console.log(msg);
       response

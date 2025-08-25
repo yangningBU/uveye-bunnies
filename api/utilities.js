@@ -420,7 +420,7 @@ export const incrementBunnyField = async (db, bunnyId, eventType) => {
   }
 
   const fieldToUpdate = eventTypeToBunnyField(eventType);
-  if (_.isEmpty(fieldToUpdate)) {
+  if (_.isNil(fieldToUpdate)) {
     throw new Error(
       "Unable to update bunny on non-existent field for event type: " +
       eventType,
@@ -428,7 +428,7 @@ export const incrementBunnyField = async (db, bunnyId, eventType) => {
   }
 
   const currentValue = querySnapshot.data()[fieldToUpdate];
-  if (_.isEmpty(currentValue)) {
+  if (_.isNil(currentValue)) {
     console.error(
       `Current value for field ${fieldToUpdate}(ID: ${bunnyId}) is missing. ` +
       "While I will be supplying a default value to ensure the " +
