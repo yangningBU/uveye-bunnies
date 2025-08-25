@@ -32,36 +32,57 @@ export const health = onRequest({ cors: true }, (_req, res) => (
 
 export const dashboard = onRequest((req, res) => {
   setCorsHeaders(res);
+  if (req.method === "OPTIONS") {
+    return res.status(200);
+  }
   getDashboardHandler(db, req, res);
 });
 
 export const getBunny = onRequest((req, res) => {
   setCorsHeaders(res);
+  if (req.method === "OPTIONS") {
+    return res.status(200);
+  }
   getBunnyHandler(db, req, res);
 });
 
 export const getBunnyNames = onRequest((req, res) => {
   setCorsHeaders(res);
+  if (req.method === "OPTIONS") {
+    return res.status(200);
+  }
   getBunnyNamesHandler(db, req, res);
 });
 
 export const recordBunnyEvent = onRequest((req, res) => {
   setCorsHeaders(res);
+  if (req.method === "OPTIONS") {
+    return res.status(200);
+  }
   bunnyEventHandler(db, req, res);
 });
 
 export const createBunny = onRequest((req, res) => {
   setCorsHeaders(res);
+  if (req.method === "OPTIONS") {
+    return res.status(200);
+  }
   createBunnyHandler(db, req, res);
 });
 
 export const getConfig = onRequest((req, res) => {
   setCorsHeaders(res);
+  if (req.method === "OPTIONS") {
+    return res.status(200);
+  }
   getConfigHandler(db, req, res);
 });
 
 export const setConfig = onRequest((req, res) => {
   setCorsHeaders(res);
+  if (req.method === "OPTIONS") {
+    return res.status(200);
+  }
   setConfigHandler(db, req, res);
 });
 
