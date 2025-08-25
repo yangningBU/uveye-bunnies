@@ -1,10 +1,19 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
-import { DEFAULT_CONFIG, DEFAULT_METRICS, EVENTS } from "../constants.js";
+import { DEFAULT_CONFIG, DEFAULT_METRICS } from "../constants.js";
 import {
   calculateAggregatesAndEntities,
   calculateDownstreamMetrics,
 } from "../utilities.js";
+import {
+  expectedTotalHappiness1,
+  expectedTotalHappiness2,
+  finalTimestampInSnapshotOneEventBundle,
+  snapshot1,
+  snapshot2,
+  timeline1,
+  timeline2,
+} from "./data.js";
 
 const emptyState = DEFAULT_METRICS;
 const noChanges = {
@@ -30,157 +39,6 @@ function assertEntitiesHaveExpectedFields(result, expectedEntities) {
     });
   });
 }
-
-const finalTimestampInSnapshotOneEventBundle = new Date("2023-01-01T00:08:00Z");
-const simpleTimeline = [
-  {
-    eventType: EVENTS.bunny.created,
-    id: 100,
-    name: "Arnold",
-    timestamp: new Date("2023-01-01T00:00:00Z"),
-  },
-  {
-    eventType: EVENTS.bunny.carrotsEaten,
-    bunnyId: 100,
-    timestamp: new Date("2023-01-01T00:01:00Z"),
-  },
-  {
-    eventType: EVENTS.bunny.created,
-    id: 101,
-    name: "Fluffy",
-    timestamp: new Date("2023-01-01T00:02:00Z"),
-  },
-  {
-    eventType: EVENTS.bunny.carrotsEaten,
-    bunnyId: 101,
-    timestamp: new Date("2023-01-01T00:03:00Z"),
-  },
-  {
-    eventType: EVENTS.bunny.lettuceEaten,
-    bunnyId: 100,
-    timestamp: new Date("2023-01-01T00:04:00Z"),
-  },
-  {
-    eventType: EVENTS.bunny.created,
-    id: 102,
-    name: "Ralphy",
-    timestamp: new Date("2023-01-01T00:05:00Z"),
-  },
-  {
-    eventType: EVENTS.bunny.carrotsEaten,
-    bunnyId: 102,
-    timestamp: new Date("2023-01-01T00:06:00Z"),
-  },
-  {
-    eventType: EVENTS.bunny.lettuceEaten,
-    bunnyId: 101,
-    timestamp: new Date("2023-01-01T00:07:00Z"),
-  },
-  {
-    eventType: EVENTS.bunny.playDateHad,
-    bunnyId: 101,
-    otherBunnyId: 102,
-    timestamp: finalTimestampInSnapshotOneEventBundle,
-  },
-];
-
-const snapshot1 = {
-  aggregates: {
-    bunnyCount: 3,
-    totalCarrotsEaten: 3,
-    totalLettuceEaten: 2,
-    totalPlayDatesHad: 1,
-  },
-  entities: [
-    {
-      id: 100,
-      name: "Arnold",
-      carrotsEaten: 1,
-      lettuceEaten: 1,
-      playDatesHad: 0,
-    },
-    {
-      id: 101,
-      name: "Fluffy",
-      carrotsEaten: 1,
-      lettuceEaten: 1,
-      playDatesHad: 1,
-    },
-    {
-      id: 102,
-      name: "Ralphy",
-      carrotsEaten: 1,
-      lettuceEaten: 0,
-      playDatesHad: 1,
-    },
-  ],
-};
-
-const expectedTotalHappiness1 = 3 * 3 + 2 * 1 + 2 * 1 * 2;
-
-const timeline2 = [
-  {
-    eventType: EVENTS.bunny.created,
-    id: 200,
-    name: "Howard",
-    timestamp: new Date("2023-01-02T00:00:00Z"),
-  },
-  {
-    eventType: EVENTS.bunny.carrotsEaten,
-    bunnyId: 100,
-    timestamp: new Date("2023-01-02T00:01:00Z"),
-  },
-  {
-    eventType: EVENTS.bunny.carrotsEaten,
-    bunnyId: 101,
-    timestamp: new Date("2023-01-02T00:02:00Z"),
-  },
-  {
-    eventType: EVENTS.bunny.carrotsEaten,
-    bunnyId: 200,
-    timestamp: new Date("2023-01-02T00:03:00Z"),
-  },
-  {
-    eventType: EVENTS.bunny.playDateHad,
-    bunnyId: 100,
-    otherBunnyId: 200,
-    timestamp: new Date("2023-01-02T00:04:00Z"),
-  },
-];
-
-const snapshot2 = {
-  aggregates: {
-    bunnyCount: 4,
-    totalCarrotsEaten: 6,
-    totalLettuceEaten: 2,
-    totalPlayDatesHad: 2,
-  },
-  entities: [
-    {
-      id: 100,
-      name: "Arnold",
-      carrotsEaten: 2,
-      lettuceEaten: 1,
-      playDatesHad: 1,
-    },
-    {
-      id: 101,
-      name: "Fluffy",
-      carrotsEaten: 2,
-      lettuceEaten: 1,
-      playDatesHad: 1,
-    },
-    {
-      id: 200,
-      name: "Howard",
-      carrotsEaten: 1,
-      lettuceEaten: 0,
-      playDatesHad: 1,
-    },
-  ],
-};
-
-const expectedTotalHappiness2 = 6 * 3 + 2 * 1 + 2 * 2 * 2;
 
 describe("state calculations", () => {
   describe("aggregated state", () => {
@@ -215,7 +73,7 @@ describe("state calculations", () => {
       async () => {
         const result = await calculateAggregatesAndEntities(
           emptyState,
-          simpleTimeline,
+          timeline1,
           findBunnySimple,
         );
 
@@ -273,7 +131,5 @@ describe("state calculations", () => {
 
       assert.equal(totalHappiness, expectedTotalHappiness2);
     });
-
-    // include play date with bunny that already happened
   });
 });
