@@ -11,7 +11,7 @@ import _ from 'lodash';
 import type {
   BunnyDetailModel,
   BunnyListItem,
-  DashboardResponse,
+  BunnyNameAndId,
   EatSomethingRequest,
   LogEventResult,
   PlayDateEventRequest,
@@ -85,14 +85,14 @@ export class BunnyDetail {
 
       this.bunny.set(bunnyData);
 
-      const getDashboard = httpsCallable<void, DashboardResponse>(this.functions, 'dashboard');
-      const dashboardResponse = await getDashboard();
-      const dashboardData = dashboardResponse.data;
-      if (_.isEmpty(dashboardData)) {
-        throw new Error(`Error retrieving dashboard contents: ${dashboardResponse}`);
+      const getBunnyNames = httpsCallable<void, BunnyNameAndId[]>(this.functions, 'getBunnyNames');
+      const nameResponse = await getBunnyNames();
+      const nameData = nameResponse.data;
+      if (_.isEmpty(nameData)) {
+        throw new Error(`Error retrieving bunny names: ${nameResponse}`);
       }
 
-      this.otherBunnies.set(dashboardData.bunnies.filter((b: BunnyListItem) => b.id !== id));
+      this.otherBunnies.set(nameData.filter((b: BunnyNameAndId) => b.id !== id));
     } catch (err) {
       console.error(err);
       // FIXME: setError here

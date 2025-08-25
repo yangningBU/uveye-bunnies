@@ -8,6 +8,7 @@ import { setGlobalOptions } from "firebase-functions/v2";
 import bunnyEventHandler from "./endpoints/bunnyEventHandler.js";
 import createBunnyHandler from "./endpoints/createBunnyHandler.js";
 import getBunnyHandler from "./endpoints/getBunnyHandler.js";
+import getBunnyNamesHandler from "./endpoints/getBunnyNamesHandler.js";
 import getConfigHandler from "./endpoints/getConfigHandler.js";
 import getDashboardHandler from "./endpoints/getDashboardHandler.js";
 import setConfigHandler from "./endpoints/setConfigHandler.js";
@@ -37,6 +38,11 @@ export const dashboard = onRequest((req, res) => {
 export const getBunny = onRequest((req, res) => {
   setCorsHeaders(res);
   getBunnyHandler(db, req, res);
+});
+
+export const getBunnyNames = onRequest((req, res) => {
+  setCorsHeaders(res);
+  getBunnyNamesHandler(db, req, res);
 });
 
 export const recordBunnyEvent = onRequest((req, res) => {

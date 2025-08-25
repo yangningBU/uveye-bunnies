@@ -13,6 +13,11 @@ interface BunnyListItem {
   happinessCount: number;
 }
 
+interface BunnyNameAndId {
+  id: string;
+  name: string;
+}
+
 interface ConfigDetail {
   pointsCarrotsEaten: number;
   pointsLettuceEaten: number;
@@ -46,6 +51,7 @@ interface PlayDateEventRequest {
 export type {
   BunnyDetailModel,
   BunnyListItem,
+  BunnyNameAndId,
   ConfigDetail,
   DashboardResponse,
   EatSomethingRequest,
