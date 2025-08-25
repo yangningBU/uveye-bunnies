@@ -89,14 +89,12 @@ export class Dashboard {
     const createBunnyCallable = httpsCallable<{ name: string }, BunnyListItem>(this.functions, 'createBunny');
     const newBunnyResult = await createBunnyCallable({ name });
     this.bunnies.update(bs => [newBunnyResult.data, ...bs]);
-    const currentTotal = this.totalCount();
-    console.log("currentTotal:", currentTotal);
+    const previousTotal = this.totalCount();
     this.totalCount.update(count => count + 1);
-    console.log("newTotal:", this.totalCount());
     this.averageHappiness.update(currentAverage => {
-      console.log("currentAverage:", currentAverage);
-      const newAverage = ((currentAverage * currentTotal) + newBunnyResult.data.happinessCount) / this.totalCount();
-      console.log("newAverage:", newAverage);
+      const newAverage = (
+        ((currentAverage * previousTotal) + newBunnyResult.data.happinessCount) / this.totalCount()   
+      );
       return newAverage;
     });
   }

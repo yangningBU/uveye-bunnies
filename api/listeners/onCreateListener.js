@@ -1,32 +1,31 @@
 import { COLLECTIONS } from "../constants.js";
-import { triggerUpdateToState } from "../utilities.js";
+import {
+  createNewSnapshot,
+  getConfig,
+  getLastSnapshot,
+  getCutOffTimestamp,
+} from "../utilities.js";
 
 const onCreateListener = async (db, fireBaseEvent) => {
-  console.log("!!onCreate triggered. Event: ", fireBaseEvent);
+  console.debug("!!onCreate triggered. Event: ", fireBaseEvent);
+  console.debug("Counting events since last snapshot.");
+  const config = await getConfig();
+  const lastSnapshot = await getLastSnapshot(db);
+  const cutOffTimestamp = await getCutOffTimestamp(db, lastSnapshot);
+  const eventCountQuery = await db
+    .collection(COLLECTIONS.eventLog)
+    .where("timestamp", ">=", cutOffTimestamp)
+    .count()
+    .get();
+  const eventCount = eventCountQuery.data().count;
+  console.debug(`There have been ${eventCount} events since last snapshot.`);
 
-  const eventId = fireBaseEvent.params.eventId;
-  console.log(`fireBaseEvent.params.eventId: "${eventId}"`);
-
-  let event;
-  const snapshot = fireBaseEvent.data;
-
-  if (snapshot) {
-    console.log("Snapshot present.");
-    event = snapshot.after.data();
+  if (eventCount >= config.eventCountTriggerForSnapshot) {
+    console.debug("Event count surpasses cutoff.");
+    createNewSnapshot(db);
   } else {
-    console.warning(
-      "The onCreateListener has no associated data. " +
-      `Falling back to direct querying by provided ID ${eventId}.`,
-    );
-    event = await db.collection(COLLECTIONS.eventLog).get(eventId);
+    console.debug("Event count under cutoff. Doing nothing.");
   }
-  console.log("Resulting event is ", event);
-
-  if (!event) {
-    throw new Error(`Event ${eventId} is missing. Aborting onCreateListener.`);
-  }
-
-  await triggerUpdateToState(db, event);
 };
 
 export default onCreateListener;

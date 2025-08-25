@@ -13,7 +13,7 @@ import {
   REQUIRED_EVENT_FIELDS,
 } from "./constants.js";
 
-const getLastSnapshot = async (db) => {
+export const getLastSnapshot = async (db) => {
   console.debug("Getting last snapshot...");
   const snapshots = await db
     .collection(COLLECTIONS.eventLog)
@@ -284,6 +284,7 @@ export const calculateAggregatesAndEntities = async (
     default:
       console.log(`Not processing event ${event.eventType}.`);
     }
+    aggregates.eventCount += 1;
   }
 
   console.log("Calculated aggregate:", aggregates);
@@ -384,18 +385,21 @@ const batchCommitEntities = async (db, entities) => {
   await batch.commit();
 };
 
-const setAggregateSummary = async (db, aggregates) => {
+const getAggregateSummary = async (db) => {
   const collection = await db.collection(COLLECTIONS.aggregates);
-  // FIXME: what if this fails? - it'll mean the dashboard
-  // will show stale data until this method succeeds
-  await collection.doc(DOC_SINGLETONS.aggregates).set({
-    ...aggregates,
-    updatedAt: FieldValue.serverTimestamp(),
-  });
   const aggregateSnapshot = await collection
     .doc(DOC_SINGLETONS.aggregates)
     .get();
   return aggregateSnapshot.data();
+};
+
+const setAggregateSummary = async (db, aggregates) => {
+  const collection = await db.collection(COLLECTIONS.aggregates);
+  await collection.doc(DOC_SINGLETONS.aggregates).set({
+    ...aggregates,
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+  return getAggregateSummary(db);
 };
 
 export const applyNewState = async (db, newState) => {
@@ -406,43 +410,6 @@ export const applyNewState = async (db, newState) => {
 
   console.log(`Upserting ${newState.entities.length} entities...`);
   await batchCommitEntities(db, newState.entities);
-};
-
-export const incrementBunnyField = async (db, bunnyId, eventType) => {
-  console.log("Updating bunny entity fields...");
-
-  const collection = await db.collection(COLLECTIONS.bunnies);
-  const doc = await collection.doc(bunnyId);
-  const querySnapshot = await doc.get();
-  if (querySnapshot.empty) {
-    console.error(`Unable to update non-existent bunny with ID ${bunnyId}.`);
-    return;
-  }
-
-  const fieldToUpdate = eventTypeToBunnyField(eventType);
-  if (_.isNil(fieldToUpdate)) {
-    throw new Error(
-      "Unable to update bunny on non-existent field for event type: " +
-      eventType,
-    );
-  }
-
-  const currentValue = querySnapshot.data()[fieldToUpdate];
-  if (_.isNil(currentValue)) {
-    console.error(
-      `Current value for field ${fieldToUpdate}(ID: ${bunnyId}) is missing. ` +
-      "While I will be supplying a default value to ensure the " +
-      "system continues to function, you should know that there " +
-      "is a fault in your initializing logic.",
-    );
-  }
-
-  await doc.update({
-    [fieldToUpdate]: (currentValue ?? DEFAULT_BUNNY[fieldToUpdate]) + 1,
-    updatedAt: FieldValue.serverTimestamp(),
-  });
-
-  console.log(`Bunny ${bunnyId} updated ${fieldToUpdate}.`);
 };
 
 export const recordBunny = async (db, bunny) => {
@@ -468,10 +435,16 @@ export const recordBunny = async (db, bunny) => {
   return newBunny;
 };
 
+export const createNewSnapshot = async (db) => {
+  console.log("Generating new snapshot...");
+  const currentAggregate = getAggregateSummary(db);
+  await recordEvent(db, EVENTS.snapshot, currentAggregate);
+};
+
 export const triggerUpdateToState = async (db) => {
   console.log("Triggering downstream processing following event...");
-  const config = await getConfig(db);
 
+  const config = await getConfig(db);
   const { lastSnapshot, events } = await getAllEventsSinceLastSnapshot(db);
   const findBunny = (list, bunnyId) => findBunnyInListOrDB(db, list, bunnyId);
   const partialNewState = await calculateAggregatesAndEntities(
@@ -489,12 +462,6 @@ export const triggerUpdateToState = async (db) => {
   };
 
   await applyNewState(db, newState);
-
-  // TODO: implement this:
-  // const config = getConfig(db);
-  // if (countEventsSinceLastSnapshot(db) >= config.eventCountCutoff) {
-  //   generateNewSnapshotAsync();
-  // }
 
   console.log("Processing complete.");
 };

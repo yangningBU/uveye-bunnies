@@ -57,6 +57,7 @@ export const timeline1 = [
 export const snapshot1 = {
   aggregates: {
     bunnyCount: 3,
+    eventCount: 9,
     totalCarrotsEaten: 3,
     totalLettuceEaten: 2,
     totalPlayDatesHad: 1,
@@ -121,6 +122,7 @@ export const timeline2 = [
 export const snapshot2 = {
   aggregates: {
     bunnyCount: 4,
+    eventCount: 14,
     totalCarrotsEaten: 6,
     totalLettuceEaten: 2,
     totalPlayDatesHad: 2,

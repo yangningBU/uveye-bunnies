@@ -48,13 +48,12 @@ export class Config {
     try {
       this.loading.set(true);
       const setConfig = httpsCallable<ConfigDetail, ConfigDetail>(this.functions, 'setConfig');
-      const updatedResult = await setConfig({
+      await setConfig({
         pointsCarrotsEaten: this.pointsCarrotsEaten,
         pointsLettuceEaten: this.pointsLettuceEaten,
         pointsPlayDatesHad: this.pointsPlayDatesHad,
         eventCountTriggerForSnapshot: this.eventCountTriggerForSnapshot,
       });
-      console.log("Updated config is:", updatedResult);
     } catch (e) {
       console.error(e);
     } finally {

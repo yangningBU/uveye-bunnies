@@ -23,11 +23,12 @@ export const DEFAULT_CONFIG = {
   pointsCarrotsEaten: 3,
   pointsLettuceEaten: 1,
   pointsPlayDatesHad: 2,
-  eventCountTriggerForSnapshot: 100,
+  eventCountTriggerForSnapshot: 50,
 };
 
 export const DEFAULT_METRICS = {
   bunnyCount: 0,
+  eventCount: 0,
   totalCarrotsEaten: 0,
   totalLettuceEaten: 0,
   totalPlayDatesHad: 0,
