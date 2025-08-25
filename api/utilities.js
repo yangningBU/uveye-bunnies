@@ -461,23 +461,27 @@ export const triggerUpdateToState = async (db) => {
   const config = await getConfig(db);
   const { lastSnapshot, events } = await getAllEventsSinceLastSnapshot(db);
 
-  const partialNewState = await calculateAggregatesAndEntities(
+  // Stage One: create projection from event list
+  const stageOneState = await calculateAggregatesAndEntities(
     lastSnapshot,
     events,
     findBunny,
   );
-  const downstreamMetrics = calculateDownstreamMetrics(partialNewState.aggregates, config);
-  console.log("downstreamMetrics", downstreamMetrics);
-  const newState = {
-    aggregates: {
-      ...partialNewState.aggregates,
-      ...downstreamMetrics,
-    },
-    entities: partialNewState.entities,
-  };
-  console.log("Applying new state:", newState);
 
-  await applyNewState(db, newState);
+  // Stage Two: calculate dependent metrics based on stage one
+  const stageTwoState = calculateDownstreamMetrics(stageOneState.aggregates, config);
+  console.debug("downstreamMetrics", stageTwoState);
+
+  const collectiveNewState = {
+    aggregates: {
+      ...stageOneState.aggregates,
+      ...stageTwoState,
+    },
+    entities: stageOneState.entities,
+  };
+
+  console.log("Applying new state:", collectiveNewState);
+  await applyNewState(db, collectiveNewState);
 
   console.log("Processing complete.");
 };

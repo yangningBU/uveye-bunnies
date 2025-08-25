@@ -55,7 +55,6 @@ export const timeline1 = [
 ];
 
 export const expectedTotalHappiness1 = 3 * 3 + 2 * 1 + 2 * 1 * 2;
-
 export const aggregate1 = {
   aggregates: {
     bunnyCount: 3,
@@ -96,7 +95,19 @@ export const snapshot1 = {
   aggregates: { ...aggregate1.aggregates, incrementalEventCount: 0 },
 };
 
+export const finalTimestampInSnapshotTwoEventBundle = new Date("2023-01-02T00:04:00Z");
 export const timeline2 = [
+  {
+    eventType: EVENTS.snapshot,
+    bunnyCount: 3,
+    eventCount: 9,
+    incrementalEventCount: 0,
+    totalCarrotsEaten: 3,
+    totalLettuceEaten: 2,
+    totalPlayDatesHad: 1,
+    totalHappiness: expectedTotalHappiness1,
+    timestamp: new Date("2023-01-01T00:10:00Z"),
+  },
   {
     eventType: EVENTS.bunny.created,
     id: 200,
@@ -122,17 +133,16 @@ export const timeline2 = [
     eventType: EVENTS.bunny.playDateHad,
     bunnyId: 100,
     otherBunnyId: 200,
-    timestamp: new Date("2023-01-02T00:04:00Z"),
+    timestamp: finalTimestampInSnapshotTwoEventBundle,
   },
 ];
 
 export const expectedTotalHappiness2 = 3 + 3 + 3 + 4;
-
 export const aggregate2 = {
   aggregates: {
     bunnyCount: 4,
-    eventCount: 14,
-    incrementalEventCount: 5,
+    eventCount: 15,
+    incrementalEventCount: 6,
     totalCarrotsEaten: 6,
     totalLettuceEaten: 2,
     totalPlayDatesHad: 2,
@@ -163,7 +173,84 @@ export const aggregate2 = {
   ],
 };
 
-export const snapshot2 = {
-  ...aggregate2,
-  aggregates: { ...aggregate2.aggregates, incrementalEventCount: 0 },
+export const finalTimestampInSnapshotThreeEventBundle = new Date("2023-01-03T00:03:00Z");
+export const timeline3 = [
+  {
+    eventType: EVENTS.snapshot,
+    bunnyCount: 4,
+    eventCount: 15,
+    incrementalEventCount: 0,
+    totalCarrotsEaten: 6,
+    totalLettuceEaten: 2,
+    totalPlayDatesHad: 2,
+    totalHappiness: expectedTotalHappiness1 + expectedTotalHappiness2,
+    timestamp: new Date("2023-01-02T00:10:00Z"),
+  },
+  {
+    eventType: EVENTS.bunny.created,
+    id: 300,
+    name: "Albert",
+    timestamp: new Date("2023-01-03T00:00:00Z"),
+  },
+  {
+    eventType: EVENTS.bunny.playDateHad,
+    bunnyId: 100,
+    otherBunnyId: 300,
+    timestamp: new Date("2023-01-03T00:01:00Z"),
+  },
+  {
+    eventType: EVENTS.bunny.playDateHad,
+    bunnyId: 100,
+    otherBunnyId: 200,
+    timestamp: new Date("2023-01-03T00:02:00Z"),
+  },
+  {
+    eventType: EVENTS.bunny.playDateHad,
+    bunnyId: 100,
+    otherBunnyId: 200,
+    timestamp: finalTimestampInSnapshotThreeEventBundle,
+  },
+];
+
+export const expectedTotalHappiness3 = 2 * 2 * 2 + 2 * 2 * 2 * 2;
+export const aggregate3 = {
+  aggregates: {
+    bunnyCount: 5,
+    eventCount: 20,
+    incrementalEventCount: 5,
+    totalCarrotsEaten: 6,
+    totalLettuceEaten: 2,
+    totalPlayDatesHad: 5,
+    totalHappiness: expectedTotalHappiness1 + expectedTotalHappiness2 + expectedTotalHappiness3,
+  },
+  entities: [
+    {
+      id: 100,
+      name: "Arnold",
+      carrotsEaten: 2,
+      lettuceEaten: 1,
+      playDatesHad: 4,
+    },
+    {
+      id: 101,
+      name: "Fluffy",
+      carrotsEaten: 2,
+      lettuceEaten: 1,
+      playDatesHad: 1,
+    },
+    {
+      id: 200,
+      name: "Howard",
+      carrotsEaten: 1,
+      lettuceEaten: 0,
+      playDatesHad: 3,
+    },
+    {
+      id: 300,
+      name: "Albert",
+      carrotsEaten: 0,
+      lettuceEaten: 0,
+      playDatesHad: 1,
+    },
+  ],
 };

@@ -8,10 +8,12 @@ import {
 import {
   aggregate1,
   aggregate2,
+  aggregate3,
   finalTimestampInSnapshotOneEventBundle,
-  snapshot1,
+  finalTimestampInSnapshotTwoEventBundle,
   timeline1,
   timeline2,
+  timeline3,
 } from "./data.js";
 
 const emptyState = DEFAULT_METRICS;
@@ -20,13 +22,13 @@ const noChanges = {
   entities: [],
 };
 
-function assertEntitiesHaveExpectedFields(result, expectedEntities) {
+function assertEntitiesHaveExpectedFields(resultEntities, expectedEntities) {
   // We"re not using assert.deepEqual because there are extra fields
   // like createdAt and updatedAt that we don"t care to compare for now
   // So we"re just comparing the fields from the expected output and
   // ensuring those are present in the result
   expectedEntities.forEach((entity) => {
-    const matchingResult = result.entities.find((b) => b.id === entity.id);
+    const matchingResult = resultEntities.find((b) => b.id === entity.id);
     Object.keys(entity).forEach((key) => {
       assert.equal(
         entity[key],
@@ -37,6 +39,29 @@ function assertEntitiesHaveExpectedFields(result, expectedEntities) {
       );
     });
   });
+}
+
+function findBunnyWithExistingEntities(list, bunnyId, entities, sinceTimestamp) {
+  const listMatch = list.find((b) => b.id === bunnyId);
+  if (listMatch) {
+    return {
+      bunny: listMatch,
+      alreadyInList: true,
+    };
+  }
+
+  const dbMatch = entities.find((b) => b.id === bunnyId);
+  if (dbMatch) {
+    return {
+      bunny: { ...dbMatch, lastEventAppliedTimestamp: sinceTimestamp },
+      alreadyInList: false,
+    };
+  }
+
+  return {
+    bunny: null,
+    alreadyInList: false,
+  };
 }
 
 describe("state calculations", () => {
@@ -51,87 +76,101 @@ describe("state calculations", () => {
 
     it("should take an empty state and return the same", async () => {
       const noEvents = [];
-      const result = await calculateAggregatesAndEntities(
+      const stateStageOne = await calculateAggregatesAndEntities(
         emptyState,
         noEvents,
         findBunnySimple,
       );
 
-      assert.deepEqual(result, noChanges);
+      assert.deepEqual(stateStageOne, noChanges);
 
-      const { totalHappiness } = calculateDownstreamMetrics(
-        result.aggregates,
+      const downstreamMetrics = calculateDownstreamMetrics(
+        stateStageOne.aggregates,
         DEFAULT_CONFIG,
       );
 
-      assert.equal(totalHappiness, 0);
+      assert.deepEqual(downstreamMetrics, {
+        totalHappiness: 0,
+      });
     });
 
     it("should aggregate simple timeline without snapshot correctly", async () => {
-      const result = await calculateAggregatesAndEntities(
+      const stateStageOne = await calculateAggregatesAndEntities(
         emptyState,
         timeline1,
         findBunnySimple,
       );
-      const { totalHappiness } = calculateDownstreamMetrics(
-        result.aggregates,
+      const downstreamMetrics = calculateDownstreamMetrics(
+        stateStageOne.aggregates,
         DEFAULT_CONFIG,
       );
 
-      const summary = {
-        ...result.aggregates,
-        totalHappiness,
+      const stageTwoAggregrates = {
+        ...stateStageOne.aggregates,
+        ...downstreamMetrics,
       };
 
-      assert.deepEqual(summary, aggregate1.aggregates);
-      assertEntitiesHaveExpectedFields(result, aggregate1.entities);
+      assert.deepEqual(stageTwoAggregrates, aggregate1.aggregates);
+      assertEntitiesHaveExpectedFields(stateStageOne.entities, aggregate1.entities);
     });
 
-    const findBunnyWithExistingEntities = (list, bunnyId) => {
-      const listMatch = list.find((b) => b.id === bunnyId);
-      if (listMatch) {
-        return {
-          bunny: listMatch,
-          alreadyInList: true,
-        };
-      }
-
-      const dbMatch = snapshot1.entities.find((b) => b.id === bunnyId);
-      if (dbMatch) {
-        return {
-          bunny: {
-            ...dbMatch,
-            lastEventAppliedTimestamp: finalTimestampInSnapshotOneEventBundle,
-          },
-          alreadyInList: false,
-        };
-      }
-
-      return {
-        bunny: null,
-        alreadyInList: false,
-      };
-    };
-
     it("should aggregate timeline given the latest snapshot", async () => {
-      const result = await calculateAggregatesAndEntities(
-        snapshot1.aggregates,
+      const findBunny = (list, bunnyId) => (
+        findBunnyWithExistingEntities(
+          list,
+          bunnyId,
+          aggregate1.entities,
+          finalTimestampInSnapshotOneEventBundle,
+        )
+      );
+      const stateStageOne = await calculateAggregatesAndEntities(
+        aggregate1.aggregates,
         timeline2,
-        findBunnyWithExistingEntities,
+        findBunny,
       );
 
-      const { totalHappiness } = calculateDownstreamMetrics(
-        result.aggregates,
+      const downstreamMetrics = calculateDownstreamMetrics(
+        stateStageOne.aggregates,
         DEFAULT_CONFIG,
       );
 
-      const summary = {
-        ...result.aggregates,
+      const stageTwoAggregrates = {
+        ...stateStageOne.aggregates,
+        ...downstreamMetrics,
+      };
+
+      assert.deepEqual(stageTwoAggregrates, aggregate2.aggregates);
+      assertEntitiesHaveExpectedFields(stateStageOne.entities, aggregate2.entities);
+    });
+
+    it("should double count play dates that occur after the first for a given pair", async () => {
+      const findBunny = (list, bunnyId) => (
+        findBunnyWithExistingEntities(
+          list,
+          bunnyId,
+          aggregate2.entities,
+          finalTimestampInSnapshotTwoEventBundle,
+        )
+      );
+
+      const stateStageOne = await calculateAggregatesAndEntities(
+        aggregate2.aggregates,
+        timeline3,
+        findBunny,
+      );
+
+      const { totalHappiness } = calculateDownstreamMetrics(
+        stateStageOne.aggregates,
+        DEFAULT_CONFIG,
+      );
+
+      const stageTwoAggregrates = {
+        ...stateStageOne.aggregates,
         totalHappiness,
       };
 
-      assert.deepEqual(summary, aggregate2.aggregates);
-      assertEntitiesHaveExpectedFields(result, aggregate2.entities);
+      assert.deepEqual(stageTwoAggregrates, aggregate3.aggregates);
+      assertEntitiesHaveExpectedFields(stateStageOne.entities, aggregate3.entities);
     });
   });
 });
