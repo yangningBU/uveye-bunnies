@@ -13,7 +13,7 @@ import {
   validateEventFields,
 } from "../utilities.js";
 
-const getReturnObjectForLoggedEvent = async (db, newEvent) => {
+const formatBunnyEvent = async (db, newEvent) => {
   let out;
 
   switch (newEvent.eventType) {
@@ -78,10 +78,9 @@ const logBunnyEvent = async (db, request, response) => {
     const newEvent = await recordEvent(db, eventType, validEventFields);
     console.log("New event created: ", newEvent);
 
-    // FIXME: move to onDocumentCreated event listener
     await triggerUpdateToState(db, newEvent);
 
-    const out = await getReturnObjectForLoggedEvent(db, newEvent);
+    const out = await formatBunnyEvent(db, newEvent);
     console.log("Returning:", out);
 
     response

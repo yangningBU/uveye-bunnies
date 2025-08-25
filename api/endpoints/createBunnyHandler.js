@@ -32,7 +32,6 @@ const logCreateBunny = async (db, request, response) => {
     const newBunnyEvent = await createBunnyCreatedEvent(db, name);
     console.log("New bunny event created: ", newBunnyEvent);
 
-    // FIXME: move to onDocumentCreated event listener
     await triggerUpdateToState(db, newBunnyEvent);
 
     const newBunnyRecord = await getBunnyById(db, newBunnyEvent.id);

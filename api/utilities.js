@@ -1,5 +1,4 @@
 import { FieldValue } from "firebase-admin/firestore";
-import _ from "lodash";
 import {
   eventTypeToBunnyField,
   AGGREGATE_HAPPINESSS_FIELD_MAP,
