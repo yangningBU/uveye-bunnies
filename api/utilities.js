@@ -317,17 +317,6 @@ export function getRandomInt(lower, upper) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-export function setCorsHeaders(res) {
-  const frontendUrl = process.env.FUNCTIONS_EMULATOR ?
-    "http://localhost:4200" :
-    "https://uveye-bunnies.web.app";
-
-  res.set("Access-Control-Allow-Origin", frontendUrl);
-  res.set("Access-Control-Allow-Headers", "Content-Type");
-  res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS"),
-  res.set("Access-Control-Max-Age", "5");
-}
-
 const getConfigRef = async (db) => {
   return await db
     .collection(COLLECTIONS.config)
