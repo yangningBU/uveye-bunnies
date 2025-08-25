@@ -43,13 +43,15 @@ const dashboardFunction = async (db, request, response) => {
     and happinessAverages should be calculated from the
     entire dataset, not just the paginated subset
     */
+    const out = {
+      bunnies: formatBunnies(bunnies, config),
+      bunniesCount: bunnyCount,
+      happinessTotal: totalHappiness,
+      happinessAverage: safeHappinessAverage(totalHappiness, bunnyCount),
+    };
+    console.debug("Returning", out);
     response.json({
-      data: {
-        bunnies: formatBunnies(bunnies, config),
-        bunniesCount: bunnyCount,
-        happinessTotal: totalHappiness,
-        happinessAverage: safeHappinessAverage(totalHappiness, bunnyCount),
-      },
+      data: out,
     });
   } catch (error) {
     console.error("Error handling request", error);

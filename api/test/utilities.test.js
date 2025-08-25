@@ -6,11 +6,10 @@ import {
   calculateDownstreamMetrics,
 } from "../utilities.js";
 import {
-  expectedTotalHappiness1,
-  expectedTotalHappiness2,
+  aggregate1,
+  aggregate2,
   finalTimestampInSnapshotOneEventBundle,
   snapshot1,
-  snapshot2,
   timeline1,
   timeline2,
 } from "./data.js";
@@ -76,16 +75,18 @@ describe("state calculations", () => {
           timeline1,
           findBunnySimple,
         );
-
-        assert.deepEqual(result.aggregates, snapshot1.aggregates);
-        assertEntitiesHaveExpectedFields(result, snapshot1.entities);
-
         const { totalHappiness } = calculateDownstreamMetrics(
           result.aggregates,
           DEFAULT_CONFIG,
         );
 
-        assert.equal(totalHappiness, expectedTotalHappiness1);
+        const summary = {
+          ...result.aggregates,
+          totalHappiness,
+        };
+
+        assert.deepEqual(summary, aggregate1.aggregates);
+        assertEntitiesHaveExpectedFields(result, aggregate1.entities);
       });
 
     const findBunnyWithExistingEntities = (list, bunnyId) => {
@@ -121,15 +122,18 @@ describe("state calculations", () => {
         findBunnyWithExistingEntities,
       );
 
-      assert.deepEqual(result.aggregates, snapshot2.aggregates);
-      assertEntitiesHaveExpectedFields(result, snapshot2.entities);
-
       const { totalHappiness } = calculateDownstreamMetrics(
         result.aggregates,
         DEFAULT_CONFIG,
       );
 
-      assert.equal(totalHappiness, expectedTotalHappiness2);
+      const summary = {
+        ...result.aggregates,
+        totalHappiness,
+      };
+
+      assert.deepEqual(summary, aggregate2.aggregates);
+      assertEntitiesHaveExpectedFields(result, aggregate2.entities);
     });
   });
 });

@@ -10,7 +10,14 @@ import {
   EVENTS,
   HAPPINESS_BUNNY_FIELD_CONFIG_MAP,
   REQUIRED_EVENT_FIELDS,
+  SNAPSHOT_FIELDS,
 } from "./constants.js";
+
+const sanitizeSnapshot = (snapshot) => {
+  if (!snapshot) return {};
+
+  return Object.fromEntries(SNAPSHOT_FIELDS.map((key) => [key, snapshot[key]]));
+};
 
 export const getLastSnapshot = async (db) => {
   console.debug("Getting last snapshot...");
@@ -23,18 +30,19 @@ export const getLastSnapshot = async (db) => {
 
   if (snapshots.empty) {
     console.debug("No snapshots.");
+    return null;
   } else {
     console.log("Snapshot found.");
     return snapshots.docs[0].data();
   }
 };
 
-const getCutOffTimestamp = async (db, lastSnapshot) => {
+export const getCutOffTimestamp = async (db, lastSnapshot) => {
   console.debug("Getting last snapshot timestamp.");
   let timestamp;
 
   if (lastSnapshot) {
-    console.debug("Snapshot found.");
+    console.debug("Using snapshot timestamp.");
     timestamp = lastSnapshot.timestamp.toDate();
   } else {
     console.debug(
@@ -70,21 +78,23 @@ const getAllEventsSinceLastSnapshot = async (db) => {
     .where("eventType", "in", Object.values(EVENTS.bunny))
     .get();
 
+  let events;
   if (querySnapshot.empty) {
     console.log("No events founds.");
-    return [];
+    events = [];
+  } else {
+    const results = querySnapshot.docs.map((event) => ({
+      id: event.id,
+      ...event.data(),
+    }));
+    console.log(`${results.length} events found.`);
+    console.debug(results);
+    events = results;
   }
 
-  const results = querySnapshot.docs.map((event) => ({
-    id: event.id,
-    ...event.data(),
-  }));
-
-  console.log(`${results.length} events found.`);
-  console.debug(results);
   return {
-    events: results,
-    lastSnapshot: lastSnapshot ?? DEFAULT_METRICS,
+    events,
+    lastSnapshot,
   };
 };
 
@@ -262,7 +272,8 @@ export const calculateAggregatesAndEntities = async (
   findBunny,
 ) => {
   const entities = [];
-  const aggregates = Object.assign({}, DEFAULT_METRICS, lastSnapshot);
+  const sanitizedSnapshot = sanitizeSnapshot(lastSnapshot);
+  const aggregates = Object.assign({}, DEFAULT_METRICS, sanitizedSnapshot);
   console.log("Starting with an agggregate snapshot like so:", aggregates);
   console.log(`Processing ${events.length} events.`);
 
@@ -280,10 +291,14 @@ export const calculateAggregatesAndEntities = async (
     case EVENTS.bunny.playDateHad:
       await handlePlayDateEvent(event, entities, aggregates, findBunny);
       break;
+    // case EVENTS.config:
+    //   await handleConfigSetEvent(event);
+    //   break;
     default:
       console.log(`Not processing event ${event.eventType}.`);
     }
     aggregates.eventCount += 1;
+    aggregates.incrementalEventCount += 1;
   }
 
   console.log("Calculated aggregate:", aggregates);
@@ -436,29 +451,42 @@ export const recordBunny = async (db, bunny) => {
 
 export const createNewSnapshot = async (db) => {
   console.log("Generating new snapshot...");
-  const currentAggregate = getAggregateSummary(db);
-  await recordEvent(db, EVENTS.snapshot, currentAggregate);
+  const currentAggregate = await getAggregateSummary(db);
+  const withRelevantFields = sanitizeSnapshot(currentAggregate);
+  const snapshotContent = {
+    ...withRelevantFields,
+    incrementalEventCount: 0,
+  };
+  await recordEvent(db, EVENTS.snapshot, snapshotContent);
+  const updatedAggregate = {
+    ...snapshotContent,
+  };
+  console.log("Updating aggregate summary to reset state.");
+  setAggregateSummary(db, updatedAggregate);
 };
 
 export const triggerUpdateToState = async (db) => {
   console.log("Triggering downstream processing following event...");
 
+  const findBunny = (list, bunnyId) => findBunnyInListOrDB(db, list, bunnyId);
   const config = await getConfig(db);
   const { lastSnapshot, events } = await getAllEventsSinceLastSnapshot(db);
-  const findBunny = (list, bunnyId) => findBunnyInListOrDB(db, list, bunnyId);
+
   const partialNewState = await calculateAggregatesAndEntities(
     lastSnapshot,
     events,
     findBunny,
   );
-
+  const downstreamMetrics = calculateDownstreamMetrics(partialNewState.aggregates, config);
+  console.log("downstreamMetrics", downstreamMetrics);
   const newState = {
     aggregates: {
       ...partialNewState.aggregates,
-      ...calculateDownstreamMetrics(partialNewState.aggregates, config),
+      ...downstreamMetrics,
     },
     entities: partialNewState.entities,
   };
+  console.log("Applying new state:", newState);
 
   await applyNewState(db, newState);
 

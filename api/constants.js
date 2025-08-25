@@ -29,9 +29,11 @@ export const DEFAULT_CONFIG = {
 export const DEFAULT_METRICS = {
   bunnyCount: 0,
   eventCount: 0,
+  incrementalEventCount: 0,
   totalCarrotsEaten: 0,
   totalLettuceEaten: 0,
   totalPlayDatesHad: 0,
+  totalHappiness: 0,
 };
 
 export const DOC_SINGLETONS = {
@@ -68,6 +70,15 @@ export const REQUIRED_EVENT_FIELDS = {
   "bunny.lettuceEaten": ["bunnyId"],
   "bunny.playDateHad": ["bunnyId", "otherBunnyId"],
 };
+
+export const SNAPSHOT_FIELDS = [
+  "bunnyCount",
+  "eventCount",
+  "totalCarrotsEaten",
+  "totalLettuceEaten",
+  "totalPlayDatesHad",
+  "totalHappiness",
+];
 
 export const eventTypeToBunnyField = (eventType) => {
   return EVENT_TO_BUNNY_FIELD_MAP[eventType];

@@ -54,13 +54,17 @@ export const timeline1 = [
   },
 ];
 
-export const snapshot1 = {
+export const expectedTotalHappiness1 = 3 * 3 + 2 * 1 + 2 * 1 * 2;
+
+export const aggregate1 = {
   aggregates: {
     bunnyCount: 3,
     eventCount: 9,
+    incrementalEventCount: 9,
     totalCarrotsEaten: 3,
     totalLettuceEaten: 2,
     totalPlayDatesHad: 1,
+    totalHappiness: expectedTotalHappiness1,
   },
   entities: [
     {
@@ -87,7 +91,10 @@ export const snapshot1 = {
   ],
 };
 
-export const expectedTotalHappiness1 = 3 * 3 + 2 * 1 + 2 * 1 * 2;
+export const snapshot1 = {
+  ...aggregate1,
+  aggregates: { ...aggregate1.aggregates, incrementalEventCount: 0 },
+};
 
 export const timeline2 = [
   {
@@ -119,13 +126,17 @@ export const timeline2 = [
   },
 ];
 
-export const snapshot2 = {
+export const expectedTotalHappiness2 = 3 + 3 + 3 + 4;
+
+export const aggregate2 = {
   aggregates: {
     bunnyCount: 4,
     eventCount: 14,
+    incrementalEventCount: 5,
     totalCarrotsEaten: 6,
     totalLettuceEaten: 2,
     totalPlayDatesHad: 2,
+    totalHappiness: expectedTotalHappiness1 + expectedTotalHappiness2,
   },
   entities: [
     {
@@ -152,4 +163,7 @@ export const snapshot2 = {
   ],
 };
 
-export const expectedTotalHappiness2 = 6 * 3 + 2 * 1 + 2 * 2 * 2;
+export const snapshot2 = {
+  ...aggregate2,
+  aggregates: { ...aggregate2.aggregates, incrementalEventCount: 0 },
+};

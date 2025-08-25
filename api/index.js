@@ -1,10 +1,10 @@
 import { initializeApp, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
-// import { onDocumentWritten } from "firebase-functions/v2/firestore";
+import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import { onRequest } from "firebase-functions/v2/https";
 import { setGlobalOptions } from "firebase-functions/v2";
 
-// import onCreateListener from "./listeners/onCreateListener.js";
+import onCreateListener from "./listeners/onCreateListener.js";
 import bunnyEventHandler from "./endpoints/bunnyEventHandler.js";
 import createBunnyHandler from "./endpoints/createBunnyHandler.js";
 import getBunnyHandler from "./endpoints/getBunnyHandler.js";
@@ -65,7 +65,7 @@ export const setConfig = onRequest((req, res) => {
   setConfigHandler(db, req, res);
 });
 
-// export const onCreateTrigger = onDocumentWritten(
-//   "events/{eventId}",
-//   (event) => onCreateListener(db, event),
-// );
+export const onCreateTrigger = onDocumentWritten(
+  "events/{eventId}",
+  (event) => onCreateListener(db, event),
+);
