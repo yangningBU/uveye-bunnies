@@ -33,7 +33,7 @@ export const health = onRequest({ cors: true }, (_req, res) => (
 export const dashboard = onRequest((req, res) => {
   setCorsHeaders(res);
   if (req.method === "OPTIONS") {
-    return res.status(200);
+    return res.status(200).send();
   }
   getDashboardHandler(db, req, res);
 });
@@ -41,7 +41,7 @@ export const dashboard = onRequest((req, res) => {
 export const getBunny = onRequest((req, res) => {
   setCorsHeaders(res);
   if (req.method === "OPTIONS") {
-    return res.status(200);
+    return res.status(200).send();
   }
   getBunnyHandler(db, req, res);
 });
@@ -49,7 +49,7 @@ export const getBunny = onRequest((req, res) => {
 export const getBunnyNames = onRequest((req, res) => {
   setCorsHeaders(res);
   if (req.method === "OPTIONS") {
-    return res.status(200);
+    return res.status(200).send();
   }
   getBunnyNamesHandler(db, req, res);
 });
@@ -57,7 +57,7 @@ export const getBunnyNames = onRequest((req, res) => {
 export const recordBunnyEvent = onRequest((req, res) => {
   setCorsHeaders(res);
   if (req.method === "OPTIONS") {
-    return res.status(200);
+    return res.status(200).send();
   }
   bunnyEventHandler(db, req, res);
 });
@@ -65,7 +65,7 @@ export const recordBunnyEvent = onRequest((req, res) => {
 export const createBunny = onRequest((req, res) => {
   setCorsHeaders(res);
   if (req.method === "OPTIONS") {
-    return res.status(200);
+    return res.status(200).send();
   }
   createBunnyHandler(db, req, res);
 });
@@ -73,7 +73,7 @@ export const createBunny = onRequest((req, res) => {
 export const getConfig = onRequest((req, res) => {
   setCorsHeaders(res);
   if (req.method === "OPTIONS") {
-    return res.status(200);
+    return res.status(200).send();
   }
   getConfigHandler(db, req, res);
 });
@@ -81,7 +81,7 @@ export const getConfig = onRequest((req, res) => {
 export const setConfig = onRequest((req, res) => {
   setCorsHeaders(res);
   if (req.method === "OPTIONS") {
-    return res.status(200);
+    return res.status(200).send();
   }
   setConfigHandler(db, req, res);
 });
