@@ -67,27 +67,25 @@ describe("state calculations", () => {
       assert.equal(totalHappiness, 0);
     });
 
-    it(
-      "should aggregate simple timeline without snapshot correctly",
-      async () => {
-        const result = await calculateAggregatesAndEntities(
-          emptyState,
-          timeline1,
-          findBunnySimple,
-        );
-        const { totalHappiness } = calculateDownstreamMetrics(
-          result.aggregates,
-          DEFAULT_CONFIG,
-        );
+    it("should aggregate simple timeline without snapshot correctly", async () => {
+      const result = await calculateAggregatesAndEntities(
+        emptyState,
+        timeline1,
+        findBunnySimple,
+      );
+      const { totalHappiness } = calculateDownstreamMetrics(
+        result.aggregates,
+        DEFAULT_CONFIG,
+      );
 
-        const summary = {
-          ...result.aggregates,
-          totalHappiness,
-        };
+      const summary = {
+        ...result.aggregates,
+        totalHappiness,
+      };
 
-        assert.deepEqual(summary, aggregate1.aggregates);
-        assertEntitiesHaveExpectedFields(result, aggregate1.entities);
-      });
+      assert.deepEqual(summary, aggregate1.aggregates);
+      assertEntitiesHaveExpectedFields(result, aggregate1.entities);
+    });
 
     const findBunnyWithExistingEntities = (list, bunnyId) => {
       const listMatch = list.find((b) => b.id === bunnyId);
